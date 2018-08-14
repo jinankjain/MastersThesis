@@ -1,0 +1,28 @@
+% Chapter apnams
+
+\chapter{APNA Management Service} % Main chapter title
+
+\label{apnams} % For referencing the chapter elsewhere, use \ref{apnams}
+
+\section{What is APNA Management Service}
+APNA Management Service is responsible for four major tasks primarily:
+
+\begin{itemize}
+    \item Issuing Ephemeral IDs
+    \item Domain Name System (DNS)
+    \item Message Authentication Key Management
+    \item Mapping IPv4/IPv6 addresses to Host Identifiers
+\end{itemize}
+
+\section{Issuing Ephemeral IDs}
+
+\section{Domain Name System (DNS)}
+\subsection{Why can't we use current DNS system?}
+Since in APNA we replaced IP addresses with Ephemeral Addresses which makes the current DNS system completely obsolete. Currently, DNS only understands how to resolve URL to IP addresses but in order to communicate with other APNA host we would need Ephemeral Address. In order to solve this problem current DNS could be modified be instead of returning A/AAAA records, it could return the certificate associated with the Ephemeral ID. This certificate contains all the details needed to establish the communication between communicating parties.
+
+\subsection{Details}
+It's a simple prototype implementation for DNS which works on basic register and request based protocol. For instance a server could register it's associated certificate with DNS when it starts. Whenever a client would need to fetch the server identity it could request from Management Service.
+
+\section{Message Authentication Key Management}
+
+\section{Mapping IPv4/IPv6 addresses to Host Identifiers}
