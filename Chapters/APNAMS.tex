@@ -24,6 +24,14 @@ Ephemeral IDs are composed of three things:
     \item Message Authentication Code (MAC)
 \end{itemize}
 
+\begin{figure}[th]
+\centering
+\includegraphics[scale=0.5]{Figures/ephid_construction.pdf}
+\decoRule
+\caption[EphID Construction]{EphID Construction, where ET is Expiration Time}
+\label{fig:ephid_con}
+\end{figure}
+
 \subsubsection{Initialization Vector (IV)}
 Secure operations of this mode in AES requires a unique IV for every encryption operation (i.e. for every EphID)
 
@@ -44,6 +52,10 @@ Host Identifiers has three main components:
     \item \textbf{Host Identity:} Host is the 3 byte unique representation for all the host within the AS. It's sufficient enough to uniquely represent all host even in the large ASes.
     \item \textbf{Expiration Time:} This represents the validity of an EphID which is expressed in Unix seconds. Control EphID usually have a longer expiration time than Session EphID. For example in our implementation Control EphID has an expiration time of 1hour and Session EphID has an expiration time of 5mins.
 \end{itemize}
+
+\subsubsection{Message Authentication Code (MAC)}
+IV and EHID are signed with the HMAC so that it could verify MAC before decryption of EphID to find HID to forward the packet.
+
 \section{Domain Name System (DNS)}
 \subsection{Why can't we use current DNS system?}
 Since in APNA we replaced IP addresses with Ephemeral Addresses which makes the current DNS system completely obsolete. Currently, DNS only understands how to resolve URL to IP addresses but in order to communicate with other APNA host we would need Ephemeral Address. In order to solve this problem current DNS could be modified be instead of returning A/AAAA records, it could return the certificate associated with the Ephemeral ID. This certificate contains all the details needed to establish the communication between communicating parties.
@@ -52,7 +64,7 @@ Since in APNA we replaced IP addresses with Ephemeral Addresses which makes the 
 It's a simple prototype implementation for DNS which works on basic register and request based protocol. For instance a server could register it's associated certificate with DNS when it starts. Whenever a client would need to fetch the server identity it could request from Management Service.
 
 \section{Message Authentication Key Management}
-In APNA every packet contains
+In APNA every packet contains MAC signed by the symmetric key of the host which is sending the packet. The symmetric key which is used to sign the packet is registered with the Management Service. So the forwarding service could ask the management service for this key and verify the authenticity of the packet before forwarding the packet to the rest of network.
 
 \section{Mapping IPv4/IPv6 addresses to Host Identity}
 Current internet only understands IPv4/IPv6 addresses to route any packet on the internet. In order to route APNA packets we need to build overlay network over the current internet. On other hand we also need 3 bytes unique representation for each host within the AS. So we have used Siphash [??] to create unique 3 bytes representation from IP address.
