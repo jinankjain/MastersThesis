@@ -56,6 +56,14 @@ Host Identifiers has three main components:
 \subsubsection{Message Authentication Code (MAC)}
 IV and EHID are signed with the HMAC so that it could verify MAC before decryption of EphID to find HID to forward the packet.
 
+\begin{figure}[th]
+\centering
+\includegraphics[scale=0.6]{Figures/ephid_gen.pdf}
+\decoRule
+\caption[EphID Generation Request]{Control EphID generation request by abc.com}
+\label{fig:ephid_gen}
+\end{figure}
+
 \section{Domain Name System (DNS)}
 \subsection{Why can't we use current DNS system?}
 Since in APNA we replaced IP addresses with Ephemeral Addresses which makes the current DNS system completely obsolete. Currently, DNS only understands how to resolve URL to IP addresses but in order to communicate with other APNA host we would need Ephemeral Address. In order to solve this problem current DNS could be modified be instead of returning A/AAAA records, it could return the certificate associated with the Ephemeral ID. This certificate contains all the details needed to establish the communication between communicating parties.
@@ -63,8 +71,43 @@ Since in APNA we replaced IP addresses with Ephemeral Addresses which makes the 
 \subsection{Details}
 It's a simple prototype implementation for DNS which works on basic register and request based protocol. For instance a server could register it's associated certificate with DNS when it starts. Whenever a client would need to fetch the server identity it could request from Management Service.
 
+\begin{figure}[th]
+\centering
+\includegraphics[scale=0.6]{Figures/dns_register.pdf}
+\decoRule
+\caption[DNS Register Domain]{abc.com registers $C_{EphID}$ with DNS}
+\label{fig:dns_register}
+\end{figure}
+
+\begin{figure}[th!]
+\centering
+\includegraphics[scale=0.6]{Figures/dns_request.pdf}
+\decoRule
+\caption[DNS Request for a Domain]{Client request for abc.com's $C_{EphID}$ from DNS}
+\label{fig:dns_request}
+\end{figure}
+
 \section{Message Authentication Key Management}
 In APNA every packet contains MAC signed by the symmetric key of the host which is sending the packet. The symmetric key which is used to sign the packet is registered with the Management Service. So the forwarding service could ask the management service for this key and verify the authenticity of the packet before forwarding the packet to the rest of network.
 
+\begin{figure}[th!]
+\centering
+\includegraphics[scale=0.6]{Figures/kms.pdf}
+\decoRule
+\caption[MAC Key Register]{abc.com registers MAC symmetric key with Key Management Service (KMS)}
+\label{fig:kms_register}
+\end{figure}
+
+\begin{figure}[th!]
+\centering
+\includegraphics[scale=0.6]{Figures/kms_request.pdf}
+\decoRule
+\caption[MAC Key Request]{Forwarding Service request host's MAC symmetric key from Key Management Service (KMS)}
+\label{fig:kms_request}
+\end{figure}
+
 \section{Mapping IPv4/IPv6 addresses to Host Identity}
 Current internet only understands IPv4/IPv6 addresses to route any packet on the internet. In order to route APNA packets we need to build overlay network over the current internet. On other hand we also need 3 bytes unique representation for each host within the AS. So we have used Siphash [??] to create unique 3 bytes representation from IP address.
+
+\section{Implementation}
+All the API access to APNA Management Service are modeled using Cap’n Proto specification.
