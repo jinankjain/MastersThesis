@@ -1,0 +1,11 @@
+% Chapter Scion Lab Deployment
+
+\chapter{SCIONLab Deployment} % Main chapter title
+\label{scionlab} % For referencing the chapter elsewhere, use \ref{scionlab}
+
+\section{SCIONLab Experimentation Environment}
+SCIONLab  is an ongoing project that enables researchers to quickly and easily interface with the SCION network and perform experiments. The main idea of SCIONLab is that participants join the SCION network environment with their own computation resources and set up their own ASes, which get connected to the actual SCION network. The new ASes will actively participate in routing inside the SCION network. Consequently, SCIONLab enables realistic experimentation with the unique properties of SCION.
+
+A researcher becomes a SCIONLab user by creating an account via the SCIONLab Coordination Service, creates ASes in her research institution, either on the dedicated hosts or inside virtual machines, and connects these ASes to SCIONLab ASes, which are a subset of SCION ASes with the capability to accept connections from SCIONLab users. The user can then start sending and receiving packets through the SCION network.
+
+The operation of SCIONLab leverages the existing mechanisms and the framework developed for SCION's deployment, such as the Local Management Service, the SCIONLab Coordination Service, and Ansible. Moreover, SCIONLab also aims at hosting test versions of SCION, with new and experimental features like APNA, and also to enable SCIONLab users to connect to one another.

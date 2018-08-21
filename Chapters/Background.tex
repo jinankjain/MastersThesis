@@ -3,3 +3,20 @@
 \chapter{Background} % Main chapter title
 
 \label{background} % For referencing the chapter elsewhere, use \ref{background}
+
+\section{Path-Segment Construction Beacons (PCBs)}
+
+\section{Border Router}
+
+\section{Dispatcher}
+In order to handle SCION packet on the endhost side, since
+\section{SCIOND}
+
+\section{SNET}
+
+\section{Service Infrastructure}
+In order to facilitate control-plane anycast communication, SCION introduces a dedicated service addressing scheme. For instance, a beacon server that wishes to register segments with a remote AS's path service does not have to know the actual address of a remote path server. Instead, the SCION service address of the path service suffices, so that the SCION border router in the remote AS can select an alive instance of the service to deliver the packet to.
+\subsection{Beacon Service}
+The path exploration process within an AS relies on the availability of a beacon server. In order to prevent a beacon server being a single point of failure, the AS can run multiple, coordinated beacon server instances.
+\subsection{Path Service}
+\subsection{Certificate Service}

@@ -5,16 +5,18 @@
 \label{apnams} % For referencing the chapter elsewhere, use \ref{apnams}
 
 \section{What is APNA Management Service}
-APNA Management Service is responsible for four major tasks primarily:
+APNA Management Service is a collection of four different types of services
 
 \begin{itemize}
-    \item Ephemeral IDs Management
+    \item Ephemeral IDs Management Service
     \item Domain Name System (DNS)
-    \item Message Authentication Key Management
-    \item Mapping IPv4/IPv6 addresses to Host Identity
+    \item Key Management Service (KMS)
+    \item Identity Management Service (IMS)
 \end{itemize}
 
 \section{Ephemeral IDs Management}
+Ephemeral IDs are very important component for establishing anonymous and accountable communication between host. Thus a major responsibility of the management service is to issue this EphID very efficiently as it would be required by every host trying to establish a new communication. This should also meet the security guarantees that is required from EphIDs.
+
 \subsection{Ephemeral ID (EphID) Structure}
 We engineered the length of EphID to optimize processing for the AES block cipher as its the only cipher with widespread hardware support, which enables high performance. In order to generate EphIDs we use a CCA-secure encryption scheme. To this end, we use a generic composition called Encrypt-then-MAC that combines a symmetric encryption with a message authentication code (MAC).
 Ephemeral IDs are composed of three things:
@@ -71,43 +73,55 @@ Since in APNA we replaced IP addresses with Ephemeral Addresses which makes the 
 \subsection{Details}
 It's a simple prototype implementation for DNS which works on basic register and request based protocol. For instance a server could register it's associated certificate with DNS when it starts. Whenever a client would need to fetch the server identity it could request from Management Service.
 
-\begin{figure}[th]
-\centering
-\includegraphics[scale=0.6]{Figures/dns_register.pdf}
-\decoRule
-\caption[DNS Register Domain]{abc.com registers $C_{EphID}$ with DNS}
-\label{fig:dns_register}
-\end{figure}
-
 \begin{figure}[th!]
 \centering
-\includegraphics[scale=0.6]{Figures/dns_request.pdf}
-\decoRule
-\caption[DNS Request for a Domain]{Client request for abc.com's $C_{EphID}$ from DNS}
-\label{fig:dns_request}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=0.95\linewidth]{Figures/dns_register.pdf}
+  \caption[DNS Register Domain]{abc.com registers $C_{EphID}$ with DNS}
+  \label{fig:dns_register}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=0.95\linewidth]{Figures/dns_request.pdf}
+  \caption[DNS Request for a Domain]{Client query abc.com's $C_{EphID}$ from DNS}
+  \label{fig:dns_request}
+\end{subfigure}
+\caption{DNS Register and Request Methods}
+\label{fig:dns}
 \end{figure}
 
-\section{Message Authentication Key Management}
+\section{Message Authentication Key Management} \label{kms}
 In APNA every packet contains MAC signed by the symmetric key of the host which is sending the packet. The symmetric key which is used to sign the packet is registered with the Management Service. So the forwarding service could ask the management service for this key and verify the authenticity of the packet before forwarding the packet to the rest of network.
 
 \begin{figure}[th!]
 \centering
-\includegraphics[scale=0.6]{Figures/kms.pdf}
-\decoRule
-\caption[MAC Key Register]{abc.com registers MAC symmetric key with Key Management Service (KMS)}
-\label{fig:kms_register}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=0.95\linewidth]{Figures/kms.pdf}
+  \caption[MAC Key Register]{Register Key}
+  \label{fig:kms_register}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=0.95\linewidth]{Figures/kms_request.pdf}
+  \caption[MAC Key Request]{Request Key}
+  \label{fig:kms_request}
+\end{subfigure}
+\caption{Key Management Service}
+\label{fig:kms}
 \end{figure}
+
+\section{Mapping IPv4/IPv6 addresses to Host Identity} \label{ims}
+Current internet only understands IPv4/IPv6 addresses to route any packet on the internet. In order to route APNA packets we need to build overlay network over the current internet. On other hand we also need 3 bytes unique representation for each host within the AS. So we have used Siphash [??] to create unique 3 bytes representation from IP address.
 
 \begin{figure}[th!]
 \centering
-\includegraphics[scale=0.6]{Figures/kms_request.pdf}
+\includegraphics[scale=0.6]{Figures/siphash.pdf}
 \decoRule
-\caption[MAC Key Request]{Forwarding Service request host's MAC symmetric key from Key Management Service (KMS)}
-\label{fig:kms_request}
+\caption[Host Identity Service]{Forwarding Service request IP address for a host identity from Identity Management Service (IMS)}
+\label{fig:ims_request}
 \end{figure}
-
-\section{Mapping IPv4/IPv6 addresses to Host Identity}
-Current internet only understands IPv4/IPv6 addresses to route any packet on the internet. In order to route APNA packets we need to build overlay network over the current internet. On other hand we also need 3 bytes unique representation for each host within the AS. So we have used Siphash [??] to create unique 3 bytes representation from IP address.
 
 \section{Implementation}
 All the API access to APNA Management Service are modeled using Cap’n Proto specification.

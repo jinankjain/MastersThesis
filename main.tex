@@ -38,6 +38,9 @@ oneside,
 
 \usepackage[backend=bibtex,style=authoryear,natbib=true]{biblatex} % Use the bibtex backend with the authoryear citation style (which resembles APA)
 
+\usepackage[demo]{graphicx}
+\usepackage{subcaption}
+
 \addbibresource{example.bib} % The filename of the bibliography
 
 \usepackage[autostyle=true]{csquotes} % Required to generate language-dependent quotes in the bibliography
@@ -203,6 +206,9 @@ The acknowledgments and the people to thank go here, don't forget to include you
 \textbf{DNS} & \textbf{D}omain \textbf{N}ame \textbf{S}ystem \\
 \textbf{IP} & \textbf{I}nternet \textbf{P}rotocol \\
 \textbf{SCION} & \textbf{S}calability \textbf{C}ontrol \textbf{I}solation \textbf{O}n Next-Generation \textbf{N}etworks \\
+\textbf{BR} & \textbf{B}order \textbf{R}outer \\
+\textbf{ISD} & \textbf{IS}olation \textbf{D}omain \\
+\textbf{AS} & \textbf{A}utonomous \textbf{S}ystem \\
 
 \end{abbreviations}
 
@@ -255,7 +261,11 @@ The acknowledgments and the people to thank go here, don't forget to include you
 \include{Chapters/Introduction}
 \include{Chapters/Background} 
 \include{Chapters/Overview}
-\include{Chapters/APNAMS} 
+\include{Chapters/APNAMS}
+\include{Chapters/AddressFamily}
+\include{Chapters/ApnaService}
+\include{Chapters/ApnaOverlay}
+\include{Chapters/ScionLab} 
 \include{Chapters/PerformanceEval} 
 
 %----------------------------------------------------------------------------------------
