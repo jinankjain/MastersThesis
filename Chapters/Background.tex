@@ -4,19 +4,35 @@
 
 \label{background} % For referencing the chapter elsewhere, use \ref{background}
 
+\section{What is SCION?}
+SCION is the new clean state internet architecture designed to provide explicit route control, failure isolation, and explicit trust information for end-to-end communication. SCION organizes existing ASes into groups of independent routing planes, called isolation domains, which interconnect to provide global connectivity. Isolation domains provide natural isolation of routing failures and misconfigurations, give endpoints strong control for both inbound and outbound traffic, provide meaningful and enforceable trust, and enable scalable routing updates with high path diversity. As a result, the SCION architecture provides strong resilience and security properties as an intrinsic consequence of its design.
+
+Besides high security, SCION also provides a scalable routing infrastructure, and high efficiency for packet forwarding. As a path-based architecture, SCION end hosts learn about available network path segments, and combine then into end-to-end paths that are carried in packet headers. For the first time endhost have complete flexibility about how their packets are going to traverse on the internet. ISPs and receivers, offering path choice to all the parties: senders, receivers, and ISPs. This approach enables path-aware communication, an emerging trend in networking. These features also enable multi-path communication, which is an important approach for high availability, rapid failover in case of network failures, increased end-to-end bandwidth, dynamic traffic optimization, and resilience to DDoS attacks.
+
+\subsection{Why a clean-slate design? Why can't we patch the current Internet with existing solutions?}
+It is turning into a litany that the internet was not designed to become the network it now is. Indeed some of its original features are seriously compromising the communications’ privacy and security. 
+
+One of the core issue is the trust needed to route IP packets between various Autonomous Systems (AS), i.e. internet domains managed by a single entity. According to Wikipedia, the number of ASes multiplied tenfold between 1999 and 2014 from 5000 to 47000. Knowing if you can trust an AS to transport your packets is no sinecure. Several models are proposed to address this issue. However none of these is fully satisfactory: either internet players need to agree on a single root of trust to vouch for everybody else (e.g. RPKI for BGPSEC or DNSSEC) in a context of high political division or the trust is delegated to a number of roots of trust, such as TLS PKI which relies on more than a thousand roots of trust and where the certificate is accepted is signed by any of these and which offers little progress to the original situation.
+
+The Internet was not designed as a high-security network. Security improvements primarily address specific attacks, but do not solve the fundamental problems and often introduce new undesirable consequences (e.g., BGPSEC prevents route hijacking but causes delayed route convergence, and does not support prefix aggregation which contributes to reduce scalability). With a clean-slate design, we can fundamentally improve the security to a level that is unlikely to be achievable through incremental changes.
+
 \section{Path-Segment Construction Beacons (PCBs)}
 
 \section{Border Router}
 
 \section{Dispatcher}
 In order to handle SCION packet on the endhost side, since
+
 \section{SCIOND}
 
 \section{SNET}
 
 \section{Service Infrastructure}
 In order to facilitate control-plane anycast communication, SCION introduces a dedicated service addressing scheme. For instance, a beacon server that wishes to register segments with a remote AS's path service does not have to know the actual address of a remote path server. Instead, the SCION service address of the path service suffices, so that the SCION border router in the remote AS can select an alive instance of the service to deliver the packet to.
+
 \subsection{Beacon Service}
 The path exploration process within an AS relies on the availability of a beacon server. In order to prevent a beacon server being a single point of failure, the AS can run multiple, coordinated beacon server instances.
+
 \subsection{Path Service}
+
 \subsection{Certificate Service}

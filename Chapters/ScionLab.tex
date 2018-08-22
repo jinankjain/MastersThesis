@@ -9,3 +9,17 @@ SCIONLab  is an ongoing project that enables researchers to quickly and easily i
 A researcher becomes a SCIONLab user by creating an account via the SCIONLab Coordination Service, creates ASes in her research institution, either on the dedicated hosts or inside virtual machines, and connects these ASes to SCIONLab ASes, which are a subset of SCION ASes with the capability to accept connections from SCIONLab users. The user can then start sending and receiving packets through the SCION network.
 
 The operation of SCIONLab leverages the existing mechanisms and the framework developed for SCION's deployment, such as the Local Management Service, the SCIONLab Coordination Service, and Ansible. Moreover, SCIONLab also aims at hosting test versions of SCION, with new and experimental features like APNA, and also to enable SCIONLab users to connect to one another.
+
+\section{Deployment efforts needed for different approach}
+
+\subsection{APNA inside SCION}
+This approach is deploy-able on the current SCIONLab infrastructure as we discussed in Chapter \ref{apna_overlay} as it only requires source and destination border router capable of understanding APNA protocol which is easily possible by deploying two new AS on the current infrastructure. But there are some small challenges which are worth mentioning.
+
+\subsection{Deploying APNA Management Service}
+Since APNA Management Service is a very crucial part of the infrastructure and every entity that wants to access its services should be able to reach it. In the usual SCIONLab AS scenario everything is behind a NAT which a problem with hard and requires setting up some VPN tunnel. This is exactly border router also do they have an internal and external interface connecting it to SCION world with the help of an OpenVPN tunnel. So in order to deploy APNA Management Service we also took help from VPN tunnels, but instead of using OpenVPN, we have used Wireguard which is way faster than OpenVPN and implmented inside Linux kernel itself.
+
+\subsection{APNA Address Family}
+In order to deploy this approach all the Border Router needs to understand this new address family.
+
+\subsection{APNA Forwarding Service}
+This approach is deploy-able on the current SCIONLab infrastructure as a matter of fact it is currently deployed on five different AS in different ISDs.
