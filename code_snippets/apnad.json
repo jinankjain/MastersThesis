@@ -1,0 +1,10 @@
+{
+  "IP": "127.0.0.1",
+  "Port": 6000,
+  "SignAlgorithm": "ed25519",
+  "SignPubKey": "mM3PVuXwnECecniEa1lbvEQ3iGYe6hR6OEFRUXKZ1Ro=",
+  "SignPrivKey": "KJuR7HgavNLTrLIfhVfeFG6G/ugtzhbkIai26fwSxBmYzc9W5fCcQJ5yeIRrWVu8RDeIZh7qFHo4QVFRcpnVGg==",
+  "HMACKey": "MSmTRQ4R2OcWmMlUChWJZpnDrUUkkg693+6/hro7JkGacpaZQjzDsL/RoCDs2S6tzIs/8gOxumihoVpCKajV3A==",
+  "AESKey": "fZfEnDO9xbFE4iYhzWrSAQ==",
+  "SiphashKey": "2ues5bdyO9TsWYao0l8Sxg=="
+}

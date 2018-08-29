@@ -16,23 +16,78 @@ One of the core issue is the trust needed to route IP packets between various Au
 
 The Internet was not designed as a high-security network. Security improvements primarily address specific attacks, but do not solve the fundamental problems and often introduce new undesirable consequences (e.g., BGPSEC prevents route hijacking but causes delayed route convergence, and does not support prefix aggregation which contributes to reduce scalability). With a clean-slate design, we can fundamentally improve the security to a level that is unlikely to be achievable through incremental changes.
 
+\section{Isolation Domains (ISD)}
+SCION introduces the concept of an \textbf{isolation domains (ISD)}, which is a fundamental building block for achieving the properties of high availability, transparency, scalability and support for heterogeneous trust.
+
+\section{Autonomous System (AS)}
+
 \section{Path-Segment Construction Beacons (PCBs)}
 
+\subsection{What is a PCB?}
+PCB stands for Path-Segment Construction Beacons. It contains information about the core AS that initiated the beacon construction and series of AS entries that follows the order of propagation (i.e., each AS appends an entry during beacon propagation). The main purpose of PCB is to explore routing paths. 
+
+\subsection{What is beaconing?}
+An ISD core announces a PCB and disseminates it as a policy-constrained multipath flood either within an ISD (to explore intra-ISD paths) or amongst core ASes (to explore inter-ISD paths). This process is referred as beaconing. PCBs accumulate cryptographically protected AS-level path information as they traverse the network. This information is called Hop-Fields (HF) within received PCBs is chained together to create a data transmission path segment that traverses a sequence of ASes. Packet thus contains AS-level path information, which avoid the need for routers to maintain inter-domain forwarding tables. This concept is referred as packet-carried forwarding state (PCFS).
+
+\section{Addressing Scheme in SCION}
+An ISD-AS number is 64-bits, with the top 16 bits indicating the ISD, and the bottom 48 bits indicating the AS. The text representation uses a "-" separator between the ISD and AS numbers. e.g. 4-ff00:1:f. AS numbering is globally unique, and uses a super-set of the existing BGP AS numbering scheme. The default formatting for AS numbers is very similar to IPv6. It uses a 16-bit ":" separated lower-case hex encoding with leading 0's ommitted: 0:0:0 to ffff:ffff:ffff. Note that the :: zero-compression feature of IPv6 is not legal. It has very limited use in a 48-bit address space, and would just add an extra complication for very little gain.
+
 \section{Border Router}
+Border routers connect different ASes supporting SCION. The main task of border routers is to forward packets. In the case of a packet containing a service address, the border router forwards it to the appropriate server, and in the case of data packet the border router forwards it either to a host inside the AS or towards the next border router. Since SCION can operate using any communication fabric inside an AS (e.g., OSPF, SDN, MPLS), the internal routers do not need to be changed.
 
 \section{Dispatcher}
-In order to handle SCION packet on the endhost side, since
 
-\section{SCIOND}
+\subsection{Role of dispatcher}
+Currently Linux kernel only understands how to handle IP packets and it does not understand SCION packets. So in order to handle SCION packet on the endhost it needs to act as an overlay over current internet. Dispatcher is that userspace process which receives SCION packet over IP/UDP overlay and handle communication within an AS. As result dispatcher is given a specific UDP port (30041) through which all SCION packets are communicated and define a single process (within each host) that handles all incoming SCION packet.
+
+\subsection{Implementation details}
+The dispatcher performs two tasks: (a) handling encapsulation and decapsulation of the IP/UDP overlay and the SCION Headers, and (b) interacting with the transport protocol stacks. That is dispatcher mediates between applications and transport protocol implementations to process incoming and outgoing packets.
+
+More specifically, for outgoing packets, the QUIC stack and UDP applications send their data along with the packet's metadata. The metadeta includes a forwarding path and an address of the first SCION hop (i.e., border router) on the path. The dispatcher, upon receiving the data and its metadata, encapsulates the data and sends the packets to the specified border router. The path and the first-hop address are provided to applications by the SCION daemon which has the required control plane information.
+
+For incoming packets, the dispatcher decapsulates the overlay header and parses the SCION header to identify the transport protocol. The dispatcher processes packets differently for different transport protocol. The dispatcher processes packets differently for different transport protocols. The dispatcher parses the identifier associated with the incoming packet and delivers the packet to the application that is registered for that identifier.
+
+\section{SCION Daemon (SCIOND)}
+SCIOND is a background process running on endhosts with the goals of
+\begin{itemize}
+    \item handling SCION control-plane messages, and
+    \item providing an API for applications and libraries to interact with SCION control plane.
+\end{itemize}
+More specifically SCIOND implements the following services
+\begin{itemize}
+    \item \textbf{Path lookup} Basically SCIOND contacts the local path server on behalf of endhost and caches the results for future use.
+    \item \textbf{Topology Information} SCIOND provides information about the topology of the local AS. Topology information includes address of the border routers (with their interface identifiers). Currently it just reads the \texttt{topology.json} to provide that information but in the future there would be a discovery service to help SCIOND to provide that information.
+    \item \textbf{Service Address lookup} SCIOND performs service address look ups i.e., converting service address to its overlay IPv4/IPv6 addresses.
+    \item \textbf{Trust Management} stores received certificates and TRCs, and checks their authenticity and consistency (when a new certificate/TRC is received). Certificates and TRCs can be provided to application on demand.
+\end{itemize}
 
 \section{SNET}
+\textit{SNET} is the library to write applications based on SCION architecture. It's very similar to golang's \texttt{net} package which is used for writing networking application. SNET provides the following basic APIs:
+\begin{itemize}
+    \item \texttt{snet.ListenSCION(net string, localAddress snet.Addr) (*Conn, error)} \\
+    It's used to start basic SCION server of type depending upon network string like \texttt{udp} or \texttt{tcp} on the local SCION address specified. It returns a \texttt{Conn} interface if successful or a error string. This interface could be used to read/write packet on the network.
+    \item \texttt{snet.DialSCION(net string, laddr, raddr snet.Addr) (*Conn, error)}
+    It's used by SCION client to establish a connection with SCION server depending upon network string. This also returns a \texttt{Conn} interface.
+\end{itemize}
+
+\subsection{Basic client/server application example}
+\inputminted[frame=lines, framesep=2mm, baselinestretch=1.2, fontsize=\footnotesize, linenos]{go}{code_snippets/temp.go}
 
 \section{Service Infrastructure}
 In order to facilitate control-plane anycast communication, SCION introduces a dedicated service addressing scheme. For instance, a beacon server that wishes to register segments with a remote AS's path service does not have to know the actual address of a remote path server. Instead, the SCION service address of the path service suffices, so that the SCION border router in the remote AS can select an alive instance of the service to deliver the packet to.
 
 \subsection{Beacon Service}
-The path exploration process within an AS relies on the availability of a beacon server. In order to prevent a beacon server being a single point of failure, the AS can run multiple, coordinated beacon server instances.
+Beacon servers are responsible for generating, receiving, and propagating PCBs to construct path segments, a process that is referred as beaconing. SCION supports two types of beaconing:
+\begin{itemize}
+    \item Intra-ISD beaconing - Its reponsible for constructing path segments from a core AS to non-core ASes within an ISD
+    \item Inter-ISD beaconing - Its responsible for constructing path segments amongst core ASes within an ISD and across ISD.
+\end{itemize}
 
 \subsection{Path Service}
+Path servers store mappings from AS identifiers to set of announced path segments, and are organized as a hierarchical caching system similar to today's DNS. Through beacon servers, ASes select the set of paths segments through which they want to be reached, and upload them to a path server in the ISD core.
+
+\subsubsection{Path resolution}
+This process allows end hosts to create an end-to-end forwarding path to a destination. It consists of two phases: (a) \textit{path lookup}, where the end host obtains the path segments, and (b) \textit{path combination}, where an actual forwarding path is created from the path segements.
 
 \subsection{Certificate Service}
+Certificate servers keep cached copies of TRCs retrieved from the ISD core, keep cached copies of AS certificates, and manage keys and certificates for securing inter-AS communication. Certificate servers are queried by beacon servers when validating the authenticity of PCBs (i.e., when a beacon server lacks a certificate).
