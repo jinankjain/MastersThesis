@@ -3,5 +3,43 @@
 \chapter{Overview} % Main chapter title
 
 \label{overview} % For referencing the chapter elsewhere, use \ref{overview}
+This chapter describes the components of our Accountable and Private Network Architecture (APNA), starting with the roles of the ASes (Section \ref{sec:role_as}), followed by the use of ephemeral identifiers (Section\ref{sec:ephid}) and ending with an end-to-end communication example (Section \ref{sec:comm})
 
-\section{Ephemeral IDs}
+\section{Role of ASes} \label{sec:role_as}
+In APNA, ASes play a very important role due to their strategic location inside the network. They act both as accountability agents and as privacy brokers. In order to act as \textit{accountability agents} you must know the identity of the host and since ASes already know the physical attachment point of their customers and thus they know their identities. Hence, ASes are the perfect candidates for  \textit{accountability agents} 
+
+At the same time, ASes can protect the identity of their customers from all the other entities on the network by masking it out. Thus it acts as \textit{host privacy brokers}. In addition, ASes certify their customer-related information (e.g. public keys), which is then used to generate keys for pervasive data encryption at the network layer; thus ASes act as \textit{data-privacy brokers}.
+
+\subsection{Accountability Functions}
+As an \textit{accountability agent}, the AS performs the following functions.
+
+\begin{itemize}
+    \item  AS creates a strong notion of host identity. In other words, the AS needs to ensure that host cannot use multiple unauthorized identities for the communication. Since AS already authenticates their customers and are thus selected as accountability agents.
+    \item AS creates a link between host identity and packet sent by the host. To this end, AS can either store every packet or insert a cryptographic mark into every packet. Since all the packets which a host sends, regardless of implementation it will go through the AS as it will be on the forwarding path. Therefore it is selected to establish this link. Using any other third party, which is not on the forwarding path will require some special mechanisms to forward all the packets to this service while on other hand its kind of natural for AS because of its strategic location in the network.
+    \item Malicious traffic can be easily stopped by the AS. Thus, AS realizes the shutoff functionality by accepting and validating shutoff requests and blocking the corresponding flows. Since AS usually include exit nodes thus they can easily block the malicious traffic before it even reaches on the network.
+\end{itemize}
+
+\subsection{Privacy Functions} As \textit{privacy broker} AS performs the following functions.
+
+\begin{itemize}
+    \item In order to provide the ability the ability for a sender to hide its network address so it can hide its identity from the third party observes in the source domain, from transit ISPs and from the destination. The AS issues an Ephemeral IDentifier (EphID) that a host can use to mask his identity and use it as a source address. This identifier serves as a privacy preserving return address and thus not break bidirectional communication. However, EphIDs must be bound to a host identity and since ASes already know their identities they are well suited to perform this binding and act as \textit{host-privacy brokers}. We provide more details about EphIDs in the following section.
+    \item AS also act as a certificate issuer, certifying that a public key indeed belongs to a host in the AS's network. More specifically the AS can vouch for the binding between an EphID that is issued to host and a public key that is bound to the identifier. Hence the AS becomes a \textit{data-privacy brokers} without revealing the identity of its customers.
+\end{itemize}
+
+\section{Ephemeral IDs} \label{sec:ephid}
+The main idea behind our proposal is the use of ephemeral identifiers instead of IPv4/IPv6 addresses. EphIDs are unique identifiers associated with host identity at the same respecting their privacy by not leaking identity information. Since ASes are already aware about the identities of their customers, issuing EphIDs to their connected hosts enables the hosts to hide their identity without comprising accountability.
+
+\subsection{EphID as an Accountability Unit}
+EphIDs are like authorization tokens issued by AS to its customer. These tokens can be used for communication with other host on the internet. In order to issue these tokens strong host authentication is required: the host must prove its identity to the AS, and only then EphIDs can be issued.
+\subsubsection{What is a valid host identifier?} 
+The only requirement for Host Identifier (HID) is that it must represent a unique host within the AS boundary. For example, a HID could be a hash of the host's public key or a number that is assigned by the AS to the host (e.g., IPv4/IPv6 address). Hence there is no specific requirement how an AS assigns HIDs until unless its a uniquely identifies a host within that AS.
+\\ \\
+There can be multiple EphIDs that are associated with an HID, and the EphIDs are cryptographically bound to the HID such that only host's AS can determine that binding. Furthermore, an EphID serves as an accountability unit for shutoff requests. A shutoff request against an EphID terminates all flows of the host that use that EphID as the source identifier. In other words, flows with the same source EphID are \textit{fate-sharing} with respect to shutoff protocol. Blacklisting source EphIDs instead of source and destination EphID pair forces hosts to carefully manage its pool of assigned EphIDs.
+
+\subsection{EphID as an Privacy Unit}
+The EphID has two important roles as a privacy unit. It hides the identity of a host and provides a tool to achieve various notion of sender-X unlinkability (e.g., sender-flow unlinkability). An EphID is only meaningful to the issuing AS and opaque to all other parties. It reveals no information about host's identity to other hosts inside the same AS nor to the peer host that the host is communicating with.
+
+EphIDs alone are insufficient for routing packets to a destination since EphID are meaningless outside the AS thus its impossible to route packets just on the basis of EphID. But SCION comes to rescue for that problem. Inside SCION intra-domain and inter-domain routing are handled separately. For inter-domain routing SCION uses \texttt{ISD-AS} number thus \texttt{(ISD-AS:EphID)} becomes a routable entity. Hence, the only leaked information is the \texttt{ISD-AS} where the host resides; the host's anonymity set becomes the size of the AS in terms of number of hosts.
+
+\section{Communication Example} \label{sec:comm}
+In this section we provide we provide a high level idea about communication workflow.
