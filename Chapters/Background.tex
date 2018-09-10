@@ -89,5 +89,5 @@ Path servers store mappings from AS identifiers to set of announced path segment
 \subsubsection{Path resolution}
 This process allows end hosts to create an end-to-end forwarding path to a destination. It consists of two phases: (a) \textit{path lookup}, where the end host obtains the path segments, and (b) \textit{path combination}, where an actual forwarding path is created from the path segements.
 
-\subsection{Certificate Service}
+\subsection{Certificate Service} \label{sec:cert_server}
 Certificate servers keep cached copies of TRCs retrieved from the ISD core, keep cached copies of AS certificates, and manage keys and certificates for securing inter-AS communication. Certificate servers are queried by beacon servers when validating the authenticity of PCBs (i.e., when a beacon server lacks a certificate).
