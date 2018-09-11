@@ -6,7 +6,7 @@
 
 \section{Background}
 \subsection{What is an address family?}
-The address family parameter (address\_family) on a socket() API determines the format of the address structure to be used on socket APIs.
+The address family parameter (address\_family) on a \texttt{BSD} socket() API determines the format of the address structure to be used on socket APIs.
 
 Address family protocols provide the network transportation of application data from one application to another (or from one process to another within the same system). The application specifies the network transport provider on the protocol parameter of the socket. For example the most popular address are following:
 \begin{itemize}
@@ -64,6 +64,16 @@ Last hop border router needs to parse the packet to find out which dispatcher it
 \end{algorithmic}
 
 \section{Modifications required in the current infrastructure}
+\subsection{SCION-APNA Packet Structure}
+\begin{figure}[th!!]
+\centering
+\noindent
+\makebox[\textwidth]{\includegraphics[scale=0.6]{Figures/apna_af.pdf}}
+\decoRule
+\caption[APNA packet structure using its own address family]{APNA Packet structure  using its own address family}
+\label{fig:apna_scion_pkt}
+\end{figure}
+
 \subsection{Border Router}
 \subsection{Dispatcher}
 \subsection{Address Types}

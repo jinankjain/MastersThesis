@@ -43,7 +43,9 @@ oneside,
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{bytefield}
-\usepackage{minted}
+\usepackage[newfloat]{minted}
+\newenvironment{code}{\captionsetup{type=listing}}{}
+\SetupFloatingEnvironment{listing}{name=Listings}
 
 \addbibresource{example.bib} % The filename of the bibliography
 

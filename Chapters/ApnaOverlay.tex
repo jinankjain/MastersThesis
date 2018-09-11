@@ -71,9 +71,24 @@ APNA session consists of following components:
 Since the underlying network is still UDP based, so SNET needs to implement the handshake on top this UDP based overlay network. The goal of this handshake is to initialize the aforementioned session structure. In the first part of the handshake \texttt{PreSessionSharedSecret} and  \texttt{SessionPrivateKey} gets populated and in the second part of the handshake rest of the parameters gets initialized.
 
 \section{Data Communication} \label{overlay:comm}
-In order to communicate on the network, a host needs to initialize the networking context with snet and register its IP address with dispatcher. Once a host is successfully registered with dispatcher it can contact the APNA Management Service to issue an Session EphID to the host. Then the host will contact the DNS service to obtain the EphID of the server that it wants to talk to. After that host could initialize the APNA handshake by creating the first APNA packet. When the SCION packet is constructed L4 src and dst address are filled with random bytes and in the payload you can find the APNA packet. When the border router at the src AS gets that packet. It performs some local processing to convert payload back to APNA Packet and perform MAC verification before forwarding it to the neighbouring BR mentioned in path information.
+This section describes all the important steps involved in establishing a communication between a client and a server using APNA.
+\subsection{SCION Initialization Phase}
+This phase is common to all the host which wants to use SCION infrastructure for communicating with the other host of the SCION network. First of all a host needs to initialize the networking context using \texttt{SNET} and register its IP address with dispatcher. In order to initialize three things are required: 1) SCIOND socket path 2) dispatcher socket path and 3) ISD-AS address. An example is shown in \ref{code:scion_init}.
 
-\subsection{Data Forwarding}
+\begin{code}
+\captionof{listing}{SCION networking context initialization}
+\inputminted[frame=lines, framesep=2mm, baselinestretch=1.2, fontsize=\footnotesize, linenos]{go}{code_snippets/scion_init.go} \label{code:scion_init}
+\end{code}
+
+Once a host is successfully registered with dispatcher it can register with the Key Management Service to issue an Control EphID to the host and perform host bootstrapping. After getting Control EphID it can do different stuff depending upon its requirements.
+
+\subsection{Starting APNA Server}
+Once the server has obtained a control EphID from the KMS it can contact the EphID Mgmt. Service to issue a receive only control EphID and use that certificate to register with the DNS service. After that it can start a new APNA server listening on a particular address using the APIs provided by \texttt{SNET}.
+
+\subsection{Starting APNA Client}
+Once the client has obtained a control EphID from the KMS it can contact the EphID Mgmt. Service to issue two different session EphID which then can be used for APNA Handshake with the server. Then the client can use the simple \texttt{SNET} API called \texttt{snet.DialSCION("apna4", dstAddr, srcAddr)} which would return a \texttt{Conn} interface that could be used to perform APNA handshake and send data further along.
+
+\subsection{Packet Forwarding}
 A border router in the source AS ensures that only packets from authenticated hosts and authorized EphIDs leave the AS; and a border router in the destination AS forwards the packets to correct dispatcher based on the destination EphID. Transit ASes do not perform additional operations and simply forward the packets to the next AS mentioned in the SCION header path information. In order to achieve high performance data forwarding, only symmetric cryptographic operations are used.
 
 Communication end-points are specified as ISD-AS:EphID tuples. For inter-domain forwarding, border routers use only ISD-AS to forward packets. Specifically, for external packets entering the AS, a border router checks whether the packet has arrived at the destination AS (Figure \ref{fig:overlay_dst}). If not, the packet is forwarded to the next AS mentioned in the Path Information in the SCION packet (Line 9). At the destination AS, the border router performs the following conditions: 1) the destination EphID ($EphID_{d}$) is valid, i.e., has not expired (Line 4).
@@ -100,4 +115,8 @@ To verify the MAC in the packet, a border router retrieves the shared key ($k_{H
 \label{fig:overlay_dst}
 \end{figure}
 
+\subsection{APNA Handshake}
+In order to derive shared session key using Diffie-Hellman key exchange which would be used to encrypt the traffic between client and server. They need to perform the handshake described in Section [??]. 
+
 \section{Drawbacks} \label{overlay:drawback}
+In the hindsight this approach feels like kind of hack and not very well integrated inside the SCION infrastructure. In a way we are kind of abusing the packet header fields by randomly filling some random marker inside L4 header which otherwise can be used judiciously for user data. This reduces the overall MTU of the SCION packet. The question is can we something better and the answer is yes. But extending the address family which SCION supports and making a new address family for APNA which can then store EphID. More details about this approach will be discussed in the next chapter.

@@ -42,6 +42,16 @@ There is not a strict hardware requirement as its basically a simple Go UDP serv
 \subsection{APNA over SCION}
 This approach is deploy-able on the current SCIONLab infrastructure as we discussed in Chapter \ref{apna_overlay} as it only requires source and destination border router capable of understanding APNA protocol which is easily possible by deploying two new AS on the current infrastructure. But there are some small challenges which are worth mentioning.
 
+\subsubsection{Border Router Configuration} \label{config:border_router}
+\begin{itemize}
+    \item \textbf{ApnaMSIP}: denotes an IPv4/IPv6 address at which APNA Management Service is listening
+    \item \textbf{Port}: denotes a UDP port on which APNA Management Service is listening
+    \item \textbf{HMACKey}: denotes the key which is used to generate 4-byte MAC for EphID authenticity. HMACKeys are usually 64 bytes long. HMAC internally uses \texttt{SHA256} to generate that MAC.
+    \item \textbf{AESKey}: denotes the key used by APNA Management Service to encrypt the host identifier. This key is 16 bytes long.
+    \item \textbf{AESBRMSKey}: denotes the symmetric key used by BR and APNA MS to encrypt the communication between them. This key is 16 bytes long.
+\end{itemize}
+\inputminted[frame=lines, framesep=2mm, baselinestretch=1.2, fontsize=\footnotesize, breaklines]{json}{code_snippets/border_router.json}
+
 \subsection{APNA Address Family}
 In order to deploy this approach all the Border Router needs to understand this new address family.
 
