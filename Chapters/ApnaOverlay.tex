@@ -21,12 +21,12 @@ There are various reasons due to which we require some modifications in the SCIO
     \item Source border routers need to authenticate the packet before forwarding the packet, as its one of the requirements of the APNA protocol. Thus source border router needs to performs extra packet processing as compared to rest of the border routers in the network.
     \item Since there is no destination address in the L4 header (Section \ref{overlay:miss_l4}) hence the destination border router cannot forward the packet to the right dispatcher which would eventually forward it to the correct host.
     \item Modification are required in the current SCION packet structure to accommodate APNA header inside its payload.
-    \item Userspace library SNET which is used to establish communication inside SCION also needs to be modified as there are changes in the packet parsing with new APNA header.
+    \item User-space library SNET which is used to establish communication inside SCION also needs to be modified as there are changes in the packet parsing with new APNA header.
 \end{itemize}
 
 \subsection{Border Router (BR)}
 
-\subsubsection{Source Border Router Modifications}
+\subsubsection{Source Border Router Modifications} \label{overlay:br_src}
 Source BR needs to verify packet authenticity before the packet can the leave the host AS. In order to verify packet authenticity BR would needs to find the sender of the packet which can obtained by parsing payload into an APNA packet. After parsing the packet it could inspect source EphID and decrypt it to obtain host's $HID$. But in order to decrypt it would require $k_{AS_{i}}$ with which it was encrypted initially. This can be solved by passing an extra configuration file while starting the border router which will contain the $k_{AS_{i}}$.
 
 Once it has successfully decrypted the HID it could contact the Key Mgmt. Service (Section \ref{sec:kms}) in order to obtain the shared key ($k_{HA}$) with which the packet is signed. That raises another problem how to contact the KMS and that could solved by using same the configuration file by including the IP address and Port Number at which KMS is listening. All the communication between BR and KMS needs to be encrypted and symmetric key associated with that encryption is also present inside the same configuration file. More details about this configuration file is present in Section [??]
@@ -35,7 +35,7 @@ Contacting KMS every time a packet comes in could be expensive. So it implements
 
 After successfully authenticating the packet source BR could forward using path information available inside the SCION packet.
 
-\subsubsection{Destination Border Router Modifications}
+\subsubsection{Destination Border Router Modifications} \label{overlay:br_dst}
 After the modifications suggested in the aforementioned section packet will the reach the destination BR. If it was a normal packet then BR would have looked at the destination IP address in the L4 header and forwarded it to that dispatcher with that IP address and  \texttt{EndhostPort} (30041) with its existing UDP overlay. But the destination IP address in the L4 header is replaced with random IP address so that operation is no longer valid.
 
 In order to obtain correct IP address of the dispatcher it needs to needs to parse the packet and obtain destination EphID. Using that EphID, BR could decrypt it to obtain destination host's $HID$ and after that it could contact the IMS (Section \ref{sec:ims}) to obtain the IP address. But the dispatcher only understands IP address, so border router performs the translation from HID to IP address and updates the SCION packet L4 destination address.
@@ -54,7 +54,7 @@ It is kind of obvious that more APNA packets are coming with same HID in the fut
 
 Figure \ref{fig:apna_scion_pkt} represents a modified SCION packet encapsulating APNA packet inside it as a payload. IP addresses shown in the above packet are filled with random address while constructing the packet.
 
-\subsection{SNET}
+\subsection{SNET} \label{overlay:snet}
 Since we no longer wants to use IP address for our communication the main networking library needs to be modified to accommodate that request. In order to accomplish this \texttt{snet.ListenSCION()} and \texttt{snet.DialSCION()} needs a accept a new network string parameter "\texttt{apna}". Before this it only supported "\texttt{udp4}". Accordingly the \texttt{read} and \texttt{write} methods provided by interface \texttt{snet.Conn} also needs to be modified as they deal with creating and parsing the SCION packet. Currently IP address for source and destination are set to actual ones corresponding to the host. But since we want to hide those IP addresses we can redact it with some random address as its not needed for intra-domain forwarding. For inter-domain forwarding last hop border router fills in with the correct IP address.
 
 \subsubsection{APNA Session Management}
