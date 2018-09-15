@@ -47,7 +47,7 @@ More specifically, for outgoing packets, the QUIC stack and UDP applications sen
 
 For incoming packets, the dispatcher decapsulates the overlay header and parses the SCION header to identify the transport protocol. The dispatcher processes packets differently for different transport protocol. The dispatcher processes packets differently for different transport protocols. The dispatcher parses the identifier associated with the incoming packet and delivers the packet to the application that is registered for that identifier.
 
-\section{SCION Daemon (SCIOND)}
+\section{SCION Daemon (SCIOND)} \label{background:sciond}
 SCIOND is a background process running on endhosts with the goals of
 \begin{itemize}
     \item handling SCION control-plane messages, and
