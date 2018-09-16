@@ -74,7 +74,17 @@ The only change that is required in the BR is at the destination BR packet proce
 \end{code}
 
 \subsection{SNET}
-There is a minor modification required in the existing snet implementation. First and foremost a new network string called "apna" needs to be introduced. Currently only one network is supported namely "udp4" but using this new network string we can modify the read and write functions to send/accept packets to/from APNA Service instead of directly forwarding it to border router or dispatcher.
+SCION initialization phase needs to be modified. It needs to contact SCIOND and establish a UDP connection with APNA service which can be used later to send packet APNA service.
+
+SNET needs to provide an interface to interact with APNA service namely a read and write interface. It also needs to resolve the IP address associated with APNA service for that \texttt{ISD-AS}. SNET provides two new API
+\begin{itemize}
+    \item \texttt{snet.ReadAPNA()} \\
+    In the background it reads from the UDP connection established with APNA service during the initialization phase and read the APNA packet inside a buffer. At last that buffer is forwarded to the endhost.
+    \item \texttt{snet.WriteAPNA()} \\
+    Behind the scenes this function uses the connection established with APNA service during the initialization phase and forward the packet to APNA service
+\end{itemize}
+
+These two new functions are provided on the same \texttt{snet.Conn} interface.
 
 \subsection{SCIOND}
 As discussed in Section \ref{background:sciond} \texttt{SCIOND} is responsible for service address resolution as well. Thus \texttt{SCIOND} needs to be extended for the same reason for new APNA service. All the endhost use the IP address provided by SCIOND to send packets and receive packets from APNA service.
@@ -115,12 +125,10 @@ After receiving the packet APNA service processes the packet as described in Sec
 Border routers can forwards the APNA service packet just like a normal SCION service packet using the path information present inside the packet.
 
 \subsection{Part Four: Destination BR forward packet to APNA service}
-At the destination border router 
+At the last hop border router it will notice the anycast service address in the SCION packet. In order to forward that packet border router needs to convert that anycast address to an IP address. IP address can be obtained from the \texttt{topology.json} which was passed an argument to border router when it was started.
 
 \subsection{Part Fifth: APNA service delivering packet to destination host}
-
-In order to understand how does two parties communication using this new APNA Service. Let's take a simple scenario as presented in Fig.\ref{fig:srv_comm}. In this case Host A which is located in \texttt{(ISD-AS)}$_A$ wants to send a packet to Host B located in \texttt{(ISD-AS)}$_B$. Host A will forward the packet to APNA Service which is located in its AS and then it will verify the packet MAC. In the previous approach this MAC verification was handled Border Router. If its successful then it will forward that packet to another APNA Service located in the destination \texttt{(ISD-AS)}$_B$ using anycast address.
-
-After receiving the packet APNA Service will verify if its a valid destination EphID. If its valid then it will decrypt the EphID to obtain the HostID to forward it to the appropriate host. Otherwise packet will be dropped.
+In order to forward the packet to the destination host APNA service requires two think an IP address and a port number. Destination port number is already present inside the APNA service request packet. In order to obtain IP address from destination EphID APNA service can use the same algorithm previously used by destination border routers. The whole process how the APNA service process a outgoing packet is explained in the Section \ref{apna_service:in}.
 
 \section{Drawbacks}
+The main drawback behind this approach it increases the header size as EphID and Port number are pushed back into payload. 

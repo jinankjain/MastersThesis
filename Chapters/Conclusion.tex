@@ -3,3 +3,23 @@
 \chapter{Conclusion} % Main chapter title
 
 \label{conclusion}
+
+\section{Summary}
+
+This thesis explores design, various implementation approaches and deployment of Accountable and Private Network Architecture (APNA) on top of SCION that provides source accountability guarantees and is privacy-preserving.
+
+Chapter \ref{overview} describes the base architecture of APNA including the two important design decisions which helps in achieving source accountability and preserves user privacy. First was to enlist ISPs are trusted third parties to provide a sweet spot for accountability and privacy. As an accountability agents ISPs establish a strong link between host identity and the sent packet on the network. As a privacy brokers ISPs issues privacy perserving addresses (i.e., EphIDs) that host can use as source address. Furthermore ISPs also provide a Public Key Infrastructure for certificates that binds EphIDs and the public keys associated with it. Using these public keys hosts can establish a shared symmetric secret key which could be used to encrypt communication which even ISPs cannot decrypt.
+
+Chapter \ref{apnams} describes the implementation details and various  functionalities realized by the APNA Management service. It discusses in great details about efficient way to generate EphID and provides byte level details about EphID and certificate associated with it. It also describes a new DNS system designed to distribute and register certificate of EphID. It explores design and implementation for Key Management Service which helps in Host Bootstrapping process and distributing host symmetric keys with other trusted components like border routers etc. Identity Management Service helps in establishing a link between HID and IP address of host and provides an efficient service to distribute that mapping to other trusted service like Border Routers, APNA service etc.
+
+Chapter \ref{apna_overlay} describes the first approach to implement APNA on top of SCION. In this approach APNA is build on top existing UDP protocol present inside SCION. The approach is very similar to TLS over TCP or QUIC over UDP. The whole APNA header was placed inside payload of the SCION packet. There were few drawbacks of using this approach as lot of useful space was wasted and which was addressed in the next approach.
+
+Chapter \ref{address_family} explores a new approach by introducing a new address family for APNA address and tries to over the drawback of the previous approach by effectively using packet space. This approach has its own drawback as deploying this approach requires a revolutionary approach i.e., modify all the intermediate border routers. Since all the border routers needs to understand this address family. 
+
+Chapter \ref{apna_service} describes a completely new approach which uses the service architecture provided by SCION to implement a new service which would be responsible for providing anonymity. This service partially resembles border router as they help in forwarding APNA packets. They also perform some of the functionality of border routers like verifying packet authenticity etc. This approach requires minimal changes in the existing SCION infrastructure which makes it deployment friendly for SCIONLab. But it has its own drawback as we have seen that it introduces another packet layer which reduces the overlay MTU. Thus effectively less space present for the data.
+
+Chapter \ref{scionlab} mainly deals with operations cost related to deploying APNA on SCIONLab. It shows various secondary tools which are required to generate different configurations required for different approaches and components (i.e., Border Routers, Dispatcher, APNA Service etc). It also describes how to deploy an APNA server and client with APNA management service on SCIONLab.
+
+\section{Future Work}
+
+\subsection{Formal verification of APNA}
