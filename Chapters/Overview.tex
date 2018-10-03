@@ -1,9 +1,10 @@
 % Chapter Overview
 
-\chapter{Overview} % Main chapter title
+\chapter{APNA Overview} % Main chapter title
 
 \label{overview} % For referencing the chapter elsewhere, use \ref{overview}
-This chapter describes the components of our Accountable and Private Network Architecture (APNA), starting with the roles of the ASes (Section \ref{sec:role_as}), followed by the use of ephemeral identifiers (Section\ref{sec:ephid}) and ending with an end-to-end communication example (Section \ref{sec:comm})
+% one section missing
+This chapter provides an overview of APNA: its two main design decisions (Sections \ref{sec:role_as} and \ref{sec:ephid}) and an example of end-to-end communication (Section \ref{sec:comm}). Section \ref{sec:apna_proto} describes APNA specific protocol details.
 
 \section{Role of ASes} \label{sec:role_as}
 In APNA, ASes play a very important role due to their strategic location inside the network. They act both as accountability agents and as privacy brokers. In order to act as \textit{accountability agents} you must know the identity of the host and since ASes already know the physical attachment point of their customers and thus they know their identities. Hence, ASes are the perfect candidates for  \textit{accountability agents} 
@@ -15,8 +16,8 @@ As an \textit{accountability agent}, the AS performs the following functions.
 
 \begin{itemize}
     \item  AS creates a strong notion of host identity. In other words, the AS needs to ensure that host cannot use multiple unauthorized identities for the communication. Since AS already authenticates their customers and are thus selected as accountability agents.
-    \item AS creates a link between host identity and packet sent by the host. To this end, AS can either store every packet or insert a cryptographic mark into every packet. Since all the packets which a host sends, regardless of implementation it will go through the AS as it will be on the forwarding path. Therefore it is selected to establish this link. Using any other third party, which is not on the forwarding path will require some special mechanisms to forward all the packets to this service while on other hand its kind of natural for AS because of its strategic location in the network.
-    \item Malicious traffic can be easily stopped by the AS. Thus, AS realizes the shutoff functionality by accepting and validating shutoff requests and blocking the corresponding flows. Since AS usually include exit nodes thus they can easily block the malicious traffic before it even reaches on the network.
+    \item AS creates a link between host identity and packet sent by the host. We chose AS of the source host as the accountability agent since it will be on the forwarding path for the host's packet. On the other hand using any other third party, which is not on the forwarding path will require some special mechanisms to forward all the packets to this service while on other hand its kind of natural for AS because of its strategic location in the network.
+    \item Without source accountability malicious users on the internet try to attack innocent users by sending bulk traffic to them (i.e., DDoS attacks) which is becoming very prevalent on the current internet. Malicious traffic of such sort can be easily stopped by the AS. Thus, AS realizes the shutoff functionality by accepting and validating shutoff requests and blocking the corresponding flows. Since AS usually include exit nodes thus they can easily block the malicious traffic before it even reaches on the network.
 \end{itemize}
 
 \subsection{Privacy Functions} As \textit{privacy broker} AS performs the following functions.
@@ -31,7 +32,7 @@ The main idea behind our proposal is the use of ephemeral identifiers instead of
 
 \subsection{EphID as an Accountability Unit}
 EphIDs are like authorization tokens issued by AS to its customer. These tokens can be used for communication with other host on the internet. In order to issue these tokens strong host authentication is required: the host must prove its identity to the AS, and only then EphIDs can be issued.
-\subsubsection{What is a valid host identifier?} 
+\paragraph{What is a valid host identifier?} 
 The only requirement for Host Identifier (HID) is that it must represent a unique host within the AS boundary. For example, a HID could be a hash of the host's public key or a number that is assigned by the AS to the host (e.g., IPv4/IPv6 address). Hence there is no specific requirement how an AS assigns HIDs until unless its a uniquely identifies a host within that AS.
 \\ \\
 There can be multiple EphIDs that are associated with an HID, and the EphIDs are cryptographically bound to the HID such that only host's AS can determine that binding. Furthermore, an EphID serves as an accountability unit for shutoff requests. A shutoff request against an EphID terminates all flows of the host that use that EphID as the source identifier. In other words, flows with the same source EphID are \textit{fate-sharing} with respect to shutoff protocol. Blacklisting source EphIDs instead of source and destination EphID pair forces hosts to carefully manage its pool of assigned EphIDs.
@@ -44,7 +45,7 @@ EphIDs alone are insufficient for routing packets to a destination since EphID a
 \section{Communication Example} \label{sec:comm}
 In this section we provide a high level idea about communication workflow inside APNA. The protocol description is provided in the following section. This section mainly describes all the important services that needs to be running inside AS for APNA to work.
 
-AS needs to provide following functionality like issuing and manage EphIDs; authenticate the packets that its host send; and provide DNS Service for hostname resolution. For these tasks, the following logical entities are present in every AS.
+AS needs to provide following functionality such as issuing and manage EphIDs; authenticate the packets that its host send; and provide DNS Service for hostname resolution. For these tasks, the following logical entities are present in every AS.
 
 \begin{figure}[th!!]
 \centering
@@ -57,7 +58,7 @@ AS needs to provide following functionality like issuing and manage EphIDs; auth
 
 \begin{itemize}
     \item \textbf{EphID Mgmt Service}: issues EphID to the host. (Refer Section \ref{sec:apna_ms})
-    \item \textbf{DNS Service}: handle DNS related queries like Domain Registration, Domain Resolution etc. (Refer Section \ref{sec:apna_dns})
+    \item \textbf{DNS Service}: handle DNS related queries such as Domain Registration, Domain Resolution etc. (Refer Section \ref{sec:apna_dns})
     \item \textbf{Identity Mgmt Service}: handles Host Identifier related queries for example converting IPv4/IPv6 address to HID and vice-versa (Refer Section \ref{sec:ims})
     \item \textbf{Key Mgmt Service}: authenticates and bootstraps hosts in the AS. (Refer Section \ref{sec:kms})
     \item \textbf{Border Router}: handles incoming and outgoing packets based on the \texttt{ISD-AS:EphID} tuple.
@@ -72,7 +73,7 @@ In Figure \ref{fig:end_to_end_comm_apna}, a host in \texttt{ISD-AS(1-ffaa:1:d4)}
     \item \textbf{Data communication}: the host proceed with data communication using its \texttt{ISD-AS:EphID} tuple and their peers \texttt{ISD-AS:EphID} tuple which they obtain through DNS Service. If host want to encrypt their communication, they perform a connection establishment prior to the actual communication, to negotiate a shared key that will be used to encrypt their data packets. The shared key is derived from public keys that are associated with the EphIDs.
 \end{itemize}
 
-\section{APNA Protocol Details}
+\section{APNA Protocol Details} \label{sec:apna_proto}
 The main objective that we had in mind while designing APNA that it should be lightweight and efficient architecture and due to that following design choices were made:
 
 \begin{itemize}
@@ -115,7 +116,7 @@ The main objective that we had in mind while designing APNA that it should be li
 \egroup
 
 \subsection{Host Bootstrapping}
-A host authenticates to its AS using a well-established authentication protocol. For example, when a user subscribes to an Internet service provider, the provider creates the authentication credentials, and these credentials are preconfigured into an Internet access device (e.g., cable or DSL modem). The device performs the authentication protocol when the user connects it to the network.
+A host authenticates to its AS using a well-established authentication protocol. For example, when a user subscribes to an Internet service provider, the provider creates the authentication credentials, and these credentials are configured into an Internet access device (e.g., cable or DSL modem). The device performs the authentication protocol when the user connects it to the network.
 
 The host (or his access device) creates a symmetric key $k_{HA}$ which serves multiple purpose. For example encrypting EphID request and reply message (refer Sec \ref{sec:why_encrypt}) and authenticating every packet that the host sends to the network. During authentication host securely sends $k_{HA}$ to the Key Management Service (KMS) by encrypting it using AS's public key ($K^{+}_{AS}$). 
 
@@ -128,10 +129,10 @@ Finally the KMS returns the control EphID ($EphID_{h}^{ctrl}$) with its expirati
 \begin{figure}[th!!]
 \centering
 \noindent
-\makebox[\textwidth]{\includegraphics[scale=0.6]{Figures/kms.png}}
+\hspace*{1.4cm}\makebox[\textwidth]{\includegraphics[scale=0.5]{Figures/kms_inter.png}}
 \decoRule
 \caption[Host Bootstrapping]{Host bootstrapping with Key Management Service}
-\label{fig:perf_dns}
+\label{fig:host_boot}
 \end{figure}
 
 \subsection{Ephemeral ID Issuance}
@@ -149,7 +150,33 @@ To keep the data encryption key secret from AS, the host (not the AS) generates 
 \subsection{Data Communication - APNA Session Key Derivation}
 In this section, we will discuss about how hosts encrypt their communication and how APNA border routers forward the data packets.
 
-\subsubsection{Data Communication with Network-Layer Encryption}
+\paragraph{Data Communication with Network-Layer Encryption}
 In order to encrypt the communication between hosts, they need to agree on shared symmetric key which would be used to encrypt the whole communication session. In order to derive this shared symmetric key hosts will perform Diffie-Hellman Key exchange. Note that two hosts can create multiple communication sessions and each session has a different symmetric key to ensure that disclosure of one encryption key does not compromise data privacy of other communication sessions.
 
-Consider two hosts, A and B with EphIDs 
+\begin{figure}[th!!]
+\centering
+\noindent
+\makebox[\textwidth]{\includegraphics[scale=0.5]{Figures/apna_kex_hand.png}}
+\decoRule
+\caption[APNA Handshake]{APNA Key Exchange}
+\label{fig:apna_key_exchange}
+\end{figure}
+
+
+Consider a client and server as shown in Figure \ref{fig:apna_key_exchange} wants to derive a shared symmetric key for encrypting the entire communication. Following steps needs to followed.
+
+\begin{itemize}
+    \item \textbf{Step 0:} First of all both client and server needs to register with Key Management Service to obtain a CtrlEphID as shown in Figure \ref{fig:host_boot}. Since this part is common to both and thats why its omitted from the Figure \ref{fig:apna_key_exchange}
+    \item \textbf{Step 1:} Server requests a receive only EphID for key pairs ($K^{+}_{RS}$/$K^{-}_{RS}$) and receives a certificate $C_{EphID_{RS}}$
+    \item \textbf{Step 2:} Server registers $C_{EphID_{RS}}$ for domain name \texttt{abc.com} with the DNS service and the DNS service replies if it was successfully registered.
+    \item \textbf{Step 3:} Client request for domain name \texttt{abc.com} from the DNS service and the DNS service replies with $C_{EphID_{RS}}$.
+    \item \textbf{Step 4:} After that client request for two session EphIDs for key pairs ($K^{+}_{C1}$/$K^{-}_{C1}$), ($K^{+}_{C2}$/$K^{-}_{C2}$) and receives two certificates $C_{EphID_{C1}}$ and $C_{EphID_{C2}}$
+    \item  \textbf{Step 5:} After receiving this certificates clients performs a Diffie-Hellman Key Exchange \cite{curve25519} between ($K^{+}_{RS}, K^{-}_{C1}$) and obtains $K_{RS-C_{1}}$
+    \item \textbf{Step 6:} Client sends the certificate associated with the $EphID_{C1}$ i.e., $C_{EphID_{C1}}$ along with encrypted $C_{EphID_{C2}}$ using the key $K_{RS-C_{1}}$.
+    \item \textbf{Step 7:} After receiving this first message from the client, server also performs the same Diffie Hellman Key exchange as the client to decrypt the encrypted $C_{EphID_{C2}}$ and performs the second key exchange using ($K^{+}_{C2}$/$K^{-}_{SS}$)
+    \item \textbf{Step 8:} Now the client will need the public key associated with $EphID_{SS}$ to obtain the same second key as the server and thus the server sends the $C_{EphID_{SS}}$ to the client. This establishes a secure channel between client and server.
+\end{itemize}
+
+%% Limitatons and missing information
+\section{Limitations}
+Most of the services described in the above section were under-specified in the previous work \cite{taeho_thesis, source_accountability} to have a working implementation, so in the next chapter we formally describe all the service interaction. This includes a complete set of APIs which APNA Management service would offer to its host and other services inside the network to enable the end-to-end communication.

@@ -30,12 +30,12 @@ In the approach presented in Chapter \ref{apna_overlay} there was one major draw
 Those bytes could be better utilized if we can introduce a new address family for APNA address. Instead of wasting space with random IPv4/IPv6 addresses use EphIDs as source and destination address. This would result in higher MTU for data packets as they don't have encapsulate EphIDs inside it and in the end would result in saving of lots of bytes which are better utilized by using EphIDs.
 
 \subsection{Representation of APNA Address Family}
-\subsubsection{AF\_APNA address family}
+\paragraph{AF\_APNA address family}
 This address family provides support for APNA protocol. AF\_APNA uses a 128 bit (16 bytes) Ephemeral IDs as address. Looking at the address size it looks very similar to IPv6 addresses but they have very different meaning. APNA address representation would be grouped as follows:
 \begin{center}
 deadcafe:baadf00ddeadbeef:40044b1d
 \end{center}
-First 4 bytes represents the initialization vector that was used to encrypt the host id. Next 8 bytes represents the encrypted host id. Last 4 bytes represents the MAC over first 12 bytes. Representation is not user friendly but it does not matter as users would never be using those addresses like IPv4/IPv6 addresses as these are Ephemeral address and exists only for a short duration. Its representation is like that mainly for the debugging reason it makes it easy to identify what went wrong while generating EphIDs.
+First 4 bytes represents the initialization vector that was used to encrypt the host id. Next 8 bytes represents the encrypted host id. Last 4 bytes represents the MAC over first 12 bytes. Representation is not user friendly but it does not matter as users would never be using those addresses such as IPv4/IPv6 addresses as these are Ephemeral address and exists only for a short duration. Its representation is like that mainly for the debugging reason it makes it easy to identify what went wrong while generating EphIDs.
 
 \section{Modifications required in the current infrastructure} \label{addr:tech}
 There are various reason which contribute towards modifications in the current infrastructure. They summed up as follows
@@ -48,12 +48,12 @@ There are various reason which contribute towards modifications in the current i
     \item User-space library SNET which is used to establish communication inside SCION also needs to be modified as there are changes in the packet parsing with new APNA header.
 \end{itemize}
 \subsection{Border Router (BR)}
-\subsubsection{Source Border Router Modifications}
+\paragraph{Source Border Router Modifications}
 As we know from Section \ref{overlay:br_src} the major function that source border router needs to perform is packet authentication. And the changes required to verify packet authenticity are similar to mentioned in Section \ref{overlay:br_src}. Previously, it was obtaining source EphID from the payload but now instead of that its in the L4Header. Secondly end-to-end MAC is still present inside the payload where the APNA header is present. This MAC include source and destination EphID plus the data inside APNA packet. On a side note, this MAC could be distributed into two different types of MAC: 1) MAC over source and destination EphID and 2) MAC over real data inside APNA packet. But for the ease of implementation both of those were accumulated inside a single end-to-end MAC.
 
 In order to verify packet authenticity need to register new hooks inside border router regarding \texttt{NeedsLocalProcessing} where it can extract the source EphID and obtain the relevant key from KMS to verify packet authenticity.
 
-\subsubsection{Destination Border Router Modifications}
+\paragraph{Destination Border Router Modifications}
 The changes in the destination border are more less the same as mentioned in Section \ref{overlay:br_dst}. Its just the packet parsing logic is different and it does not replace destination EphID with decrypted IP address from it. That task is left for the dispatcher.  
 
 \subsection{Intermediate Border Router}
@@ -79,17 +79,17 @@ Figure  \ref{fig:apna_scion_addr} exemplify a modified SCION packet which replac
 
 \subsection{SCION Packet Parsing}
 
-\subsubsection{Golang}
+\paragraph{Golang}
 \texttt{HostAddrType} enum needs to be extended with new \texttt{HostTypeAPNA} (4 is the numerical value) inside \texttt{go/lib/addr/host.go}. Since its a \texttt{HostAddrType} it needs to implement the other function in order to comply to the interface, which includes \texttt{Length}, \texttt{String} etc. 
 
-\subsubsection{Python}
+\paragraph{Python}
 \texttt{HostAddrBase} map needs to be extended to support this new APNA address family. The changes are contained within one single file \texttt{python/lib/packet/host\_addr.py} and are similar to Golang.
 
-\subsubsection{C}
+\paragraph{C}
 The changes required on the C side are contained within \texttt{c/lib/scion} subsystem apart from the changes which are required from dispatcher. A new macro \texttt{ADDR\_APNA\_TYPE} needs to be introduced with its associated length macro inside \texttt{c/lib/scion/address.h}
 
 \subsection{SNET}
-First of all \texttt{SNET} requires a similar change like previous approach i.e., a new network string parameter "apna". Rest of the changes regarding APNA handshake and session management is similar to one mentioned in Section \ref{overlay:snet}
+First of all \texttt{SNET} requires a similar change as the previous approach i.e., a new network string parameter "apna". Rest of the changes regarding APNA handshake and session management is similar to one mentioned in Section \ref{overlay:snet}
 
 \section{Data Communication} \label{addr:data}
 
@@ -105,7 +105,7 @@ It only presents a very abstract idea as most of details are same as previous ap
 There are four major parts
 
 \subsection{Part One: Sending packet to first hop BR }
-This part involves setting up the SCION networking context first like the previous approach and query the path server using SCIOND to obtain a list of available to Host B. From the list Host A can choose any path that he likes depending upon his requirements/constraints. After selecting the path, Host A can perform DNS query resolution for Host B and obtain its receive-only EphID registered with DNS Service. After that using the SNET API host can construct the SCION-APNA packet and send it to the border router interface mentioned in path-set returned by the Path Server.
+This part involves setting up the SCION networking context first similar to the previous approach and query the path server using SCIOND to obtain a list of available to Host B. From the list Host A can choose any path that he likes depending upon his requirements/constraints. After selecting the path, Host A can perform DNS query resolution for Host B and obtain its receive-only EphID registered with DNS Service. After that using the SNET API host can construct the SCION-APNA packet and send it to the border router interface mentioned in path-set returned by the Path Server.
 
 \subsection{Part Two: Routing packet to last hop BR}
 Once the packet reaches first hop border router it will verify the packet authenticity and if that's successful it will forward the packet to the next hop border router looking at the path information header inside the SCION packet. All information that is needed to forward the packet is present inside the packet until the packet reaches the last hop border router.
@@ -136,4 +136,4 @@ One packet has reached the dispatcher it needs to parse the packet to obtain the
 % \end{algorithmic}
 
 \section{Drawbacks} \label{addr:drawback}
-The main drawback behind this approach is that it requires changing all the intermediate border routers to deploy this approach on any existing SCION deployment. Changing all the intermediate border routers is not really solution for someone like me who wants to experiment with the prototype implementation. So is there no way out of this problem? I think there is a way using SCION service infrastructure and offload some functionality of the border routers to a new SCION service. We will discuss more about this approach in the next Chapter.
+The main drawback behind this approach is that it requires changing all the intermediate border routers to deploy this approach on any existing SCION deployment. Changing all the intermediate border routers is not really solution for someone who wants to experiment with the prototype implementation. So is there no way out of this problem? I think there is a way using SCION service infrastructure and offload some functionality of the border routers to a new SCION service. We will discuss more about this approach in the next Chapter.

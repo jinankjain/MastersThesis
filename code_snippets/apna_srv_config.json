@@ -1,0 +1,8 @@
+{
+    "ApnaMSIP": "10.0.32.1",
+    "Port": 6000,
+    "HMACKey": "MSmTRQ4R2OcWmMlUChWJZpnDrUUkkg693+6/hro7JkGacpaZQjzDsL/RoCDs2S6tzIs/8gOxumihoVpCKajV3A==",
+    "AESKey": "fZfEnDO9xbFE4iYhzWrSAQ==",
+    "SrvIP": "10.0.32.8",
+    "AESSRVMSKey": "2ues5bdyO9TsWYao0l8Sxg=="
+}

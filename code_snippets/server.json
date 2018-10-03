@@ -1,0 +1,8 @@
+{
+    "ApnaMSPubkey": "mM3PVuXwnECecniEa1lbvEQ3iGYe6hR6OEFRUXKZ1Ro=",
+    "SymmetricKey": "fZfEnDO9xbFE4iYhzWrSAQ==",
+    "HMACKey": "qxBaApMRz2zTFlQ1tD94RriDNHT8ISLxaXKCN2cRez0n5sNBErOo9LCRn26Zwrgtb2z2PH/uRueO4pKDD69aiA==",
+    "ApnaMSIP": "10.0.32.1",
+    "Port": 6000,
+    "ServerIP": "10.0.32.8"
+}

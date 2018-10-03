@@ -3,17 +3,30 @@
 \chapter{APNA over SCION} % Main chapter title
 
 \label{apna_overlay}
-In this chapter we will discuss an approach to implement APNA as a overlay on the current SCION infrastructure. We will start with the explaining the core idea behind this approach (Section \ref{overlay:main_idea}), proceeding with technical difficulties and modification required in the current infrastructure (Section \ref{overlay:modifications}). After that we will talk about example scenario in which two hosts will establish a communication session interacting with services from APNA Management Service (Section \ref{overlay:comm}) and in the end we will discuss some shorting or drawbacks related to this approach (Section \ref{overlay:drawback}).
+In order to integrate APNA inside there are few key challenges:
+\begin{itemize}
+    \item Replacing IP addresses with Ephemeral Identifiers for the communication purpose. 
+    \item Modifying the packet forwarding service (i.e., border routers) to incorporate the packet authenticity checks and packet forwarding based on the Ephemeral Identifiers.
+\end{itemize}
+
+There are multiple ways to overcome those challenges and we discuss three different ways to integrate APNA inside SCION and they are as follows:
+\begin{itemize}
+    \item APNA over SCION (Chapter \ref{apna_overlay})
+    \item APNA address family (Chapter \ref{address_family})
+    \item APNA as SCION Service (Chapter \ref{apna_service})
+\end{itemize}
+
+In this chapter we will discuss the first approach to implement APNA as a overlay on the current SCION infrastructure and the rest of the approaches are discussed in further chapters. We will start with the explaining the core idea behind this approach (Section \ref{overlay:main_idea}), proceeding with technical difficulties and modification required in the current infrastructure (Section \ref{overlay:modifications}). After that we will talk about example scenario in which two hosts will establish a communication session interacting with services from APNA Management Service (Section \ref{overlay:comm}) and in the end we will discuss some shorting or drawbacks related to this approach (Section \ref{overlay:drawback}).
 
 \section{Main Idea} \label{overlay:main_idea}
 
 The main idea behind this approach is to encapsulate APNA packet as a payload to the SCION packet. This idea is very similar to how TLS is implemented over TCP or how QUIC is implemented over UDP.  QUIC uses UDP as substrate so as to not require changes to legacy client operating systems and middleboxes to be deployable.
 
 \subsection{Why APNA is built on top of SCION?}
-Following a similar reasoning to QUIC/TLS, APNA is also built on top of SCION. The reason behind that it requires least amount of modification in the current SCION infrastructure which makes its deployment very easy on SCIONLab or other SCION deployments. Since it is not dependent on other SCION infrastructure, this loose coupling with other components helps a lot in the development of APNA protocol.
+Following a similar reasoning to QUIC/TLS \cite{quic} \cite{tls}, APNA is also built on top of SCION. The reason behind that it requires least amount of modification in the current SCION infrastructure which makes its deployment very easy on SCIONLab or other SCION deployments. Since it is not dependent on other SCION infrastructure, this loose coupling with other components helps a lot in the development of APNA protocol.
 
-\subsection{What happens to SCION L4 Header?} \label{overlay:miss_l4}
-For SCION all the information related to intra-domain routing is available inside L4 header. And primarily intra-domain routing is based on IP address for SCION. But we don't want IP address in the SCION packet as that will result in the violation of sender-X unlinkability property of APNA protocol. So in order to overcome this problem instead of using real IP addresses in the L4 header for source and destionation address we replace it with some random IPv4/IPv6 address.
+\subsection{What happens to SCION Intra-Domain Header?} \label{overlay:miss_l4}
+For SCION all the information related to intra-domain routing is available inside L4 header. And primarily intra-domain routing is based on IP address for SCION. But we don't want IP address in the SCION packet as that will result in the violation of sender-X unlinkability property of APNA protocol. So in order to overcome this problem instead of using real IP addresses in the L4 header for source and destination address we replace it with some identification tag for APNA Packet. For the sake of implementation we reserved the "apna" ASCII representation i.e., \texttt{97.112.110.97} (IPv4 address) or \texttt{0:0:0:0:0:FFFF:6170:6E61} (IPv6 address) to identify whether its APNA packet or not.
 
 \section{Modification in the current infrastructure} \label{overlay:modifications}
 There are various reasons due to which we require some modifications in the SCION infrastructure and those reasons are as follows:
@@ -26,21 +39,21 @@ There are various reasons due to which we require some modifications in the SCIO
 
 \subsection{Border Router (BR)}
 
-\subsubsection{Source Border Router Modifications} \label{overlay:br_src}
+\paragraph{Source Border Router Modifications} \label{overlay:br_src}
 Source BR needs to verify packet authenticity before the packet can the leave the host AS. In order to verify packet authenticity BR would needs to find the sender of the packet which can obtained by parsing payload into an APNA packet. After parsing the packet it could inspect source EphID and decrypt it to obtain host's $HID$. But in order to decrypt it would require $k_{AS_{i}}$ with which it was encrypted initially. This can be solved by passing an extra configuration file while starting the border router which will contain the $k_{AS_{i}}$.
 
 Once it has successfully decrypted the HID it could contact the Key Mgmt. Service (Section \ref{sec:kms}) in order to obtain the shared key ($k_{HA}$) with which the packet is signed. That raises another problem how to contact the KMS and that could solved by using same the configuration file by including the IP address and Port Number at which KMS is listening. All the communication between BR and KMS needs to be encrypted and symmetric key associated with that encryption is also present inside the same configuration file. More details about this configuration file is present in Section [??]
 
-Contacting KMS every time a packet comes in could be expensive. So it implements a small cache of replies which it received from the KMS for fast packet processing. Currently it's a very simple cache based on First in First Out (FIFO) replacement policy, but it would be interesting to investigate other caching policies like Least Recently Used (LRU) etc.
+Contacting KMS every time a packet comes in could be expensive. So it implements a small cache of replies which it received from the KMS for fast packet processing. Currently it's a very simple cache based on First in First Out (FIFO) replacement policy, but it would be interesting to investigate other caching policies such as Least Recently Used (LRU) etc.
 
 After successfully authenticating the packet source BR could forward using path information available inside the SCION packet.
 
-\subsubsection{Destination Border Router Modifications} \label{overlay:br_dst}
+\paragraph{Destination Border Router Modifications} \label{overlay:br_dst}
 After the modifications suggested in the aforementioned section packet will the reach the destination BR. If it was a normal packet then BR would have looked at the destination IP address in the L4 header and forwarded it to that dispatcher with that IP address and  \texttt{EndhostPort} (30041) with its existing UDP overlay. But the destination IP address in the L4 header is replaced with random IP address so that operation is no longer valid.
 
 In order to obtain correct IP address of the dispatcher it needs to needs to parse the packet and obtain destination EphID. Using that EphID, BR could decrypt it to obtain destination host's $HID$ and after that it could contact the IMS (Section \ref{sec:ims}) to obtain the IP address. But the dispatcher only understands IP address, so border router performs the translation from HID to IP address and updates the SCION packet L4 destination address.
 
-It is kind of obvious that more APNA packets are coming with same HID in the future thus it can perform some caching on the results from IMS for faster packet processing like source BR.
+It is kind of obvious that more APNA packets are coming with same HID in the future thus it can perform some caching on the results from IMS for faster packet processing such as source BR.
 
 \subsection{SCION-APNA Packet Structure}
 \begin{figure}[th!!]
@@ -57,7 +70,7 @@ Figure \ref{fig:apna_scion_pkt} represents a modified SCION packet encapsulating
 \subsection{SNET} \label{overlay:snet}
 Since we no longer wants to use IP address for our communication the main networking library needs to be modified to accommodate that request. In order to accomplish this \texttt{snet.ListenSCION()} and \texttt{snet.DialSCION()} needs a accept a new network string parameter "\texttt{apna}". Before this it only supported "\texttt{udp4}". Accordingly the \texttt{read} and \texttt{write} methods provided by interface \texttt{snet.Conn} also needs to be modified as they deal with creating and parsing the SCION packet. Currently IP address for source and destination are set to actual ones corresponding to the host. But since we want to hide those IP addresses we can redact it with some random address as its not needed for intra-domain forwarding. For inter-domain forwarding last hop border router fills in with the correct IP address.
 
-\subsubsection{APNA Session Management}
+\paragraph{APNA Session Management}
 APNA session consists of following components:
 \begin{itemize}
     \item \texttt{SessionPrivateKey}:  This private key corresponds two second EphID which contributes to the SessionSecret.
@@ -67,7 +80,7 @@ APNA session consists of following components:
     \item \texttt{RemoteEphID}: is the session EphID of the remote host.
 \end{itemize}
 
-\subsubsection{APNA Key Exchange inside SNET}
+\paragraph{APNA Key Exchange inside SNET}
 Since the underlying network is still UDP based, so SNET needs to implement the handshake on top this UDP based overlay network. The goal of this handshake is to initialize the aforementioned session structure. In the first part of the handshake \texttt{PreSessionSharedSecret} and  \texttt{SessionPrivateKey} gets populated and in the second part of the handshake rest of the parameters gets initialized.
 
 \section{Data Communication} \label{overlay:comm}
@@ -103,7 +116,7 @@ To verify the MAC in the packet, a border router retrieves the shared key ($k_{H
 \centering
 \hspace*{2cm}\includegraphics[scale=0.5]{Figures/overlay_src.pdf}
 \decoRule
-\caption[Apna Overlay Outgoing Packet]{Outgoing Packet}
+\caption[APNA Overlay Outgoing Packet]{Outgoing Packet}
 \label{fig:overlay_src}
 \end{figure}
 
@@ -111,12 +124,12 @@ To verify the MAC in the packet, a border router retrieves the shared key ($k_{H
 \centering
 \hspace*{2cm}\includegraphics[scale=0.5]{Figures/overlay_dst.pdf}
 \decoRule
-\caption[Apna Overlay Incoming Packet]{Incoming Packet}
+\caption[APNA Overlay Incoming Packet]{Incoming Packet}
 \label{fig:overlay_dst}
 \end{figure}
 
 \subsection{APNA Handshake}
-In order to derive shared session key using Diffie-Hellman key exchange which would be used to encrypt the traffic between client and server. They need to perform the handshake described in Section [??]. 
+In order to derive shared session key using Diffie-Hellman key exchange which would be used to encrypt the traffic between client and server. They need to perform the handshake described in Section \ref{sec:apna_proto}. 
 
 \section{Drawbacks} \label{overlay:drawback}
 In the hindsight this approach feels like kind of hack and not very well integrated inside the SCION infrastructure. In a way we are kind of abusing the packet header fields by randomly filling some random marker inside L4 header which otherwise can be used judiciously for user data. This reduces the overall MTU of the SCION packet. The question is can we something better and the answer is yes. But extending the address family which SCION supports and making a new address family for APNA which can then store EphID. More details about this approach will be discussed in the next chapter.

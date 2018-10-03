@@ -3,19 +3,21 @@
 \chapter{SCIONLab Deployment} % Main chapter title
 \label{scionlab} % For referencing the chapter elsewhere, use \ref{scionlab}
 
-\section{SCIONLab Experimentation Environment}
+This chapter describes the deployment efforts required to deploy on SCIONLab for all the approaches discussed in the previous chapters. Section \ref{lab:intro} provides a brief overview about the SCIONLab environment. Section \ref{lab:apna_srv} provides details about the configuration for APNA management service and how it can be deployed on server using several VPN tunnels. Section \ref{lab:all} describes deployment effort required for different approaches discussed in the previous chapters.
+
+\section{SCIONLab Experimentation Environment} \label{lab:intro}
 SCIONLab  is an ongoing project that enables researchers to quickly and easily interface with the SCION network and perform experiments. The main idea of SCIONLab is that participants join the SCION network environment with their own computation resources and set up their own ASes, which get connected to the actual SCION network. The new ASes will actively participate in routing inside the SCION network. Consequently, SCIONLab enables realistic experimentation with the unique properties of SCION.
 
 A researcher becomes a SCIONLab user by creating an account via the SCIONLab Coordination Service, creates ASes in her research institution, either on the dedicated hosts or inside virtual machines, and connects these ASes to SCIONLab ASes, which are a subset of SCION ASes with the capability to accept connections from SCIONLab users. The user can then start sending and receiving packets through the SCION network.
 
-The operation of SCIONLab leverages the existing mechanisms and the framework developed for SCION's deployment, such as the Local Management Service, the SCIONLab Coordination Service, and Ansible. Moreover, SCIONLab also aims at hosting test versions of SCION, with new and experimental features like APNA, and also to enable SCIONLab users to connect to one another.
+The operation of SCIONLab leverages the existing mechanisms and the framework developed for SCION's deployment, such as the Local Management Service, the SCIONLab Coordination Service, and Ansible. Moreover, SCIONLab also aims at hosting test versions of SCION, with new and experimental features such as APNA, and also to enable SCIONLab users to connect to one another.
 
-\section{Deploying APNA Management Service}
+\section{Deploying APNA Management Service} \label{lab:apna_srv}
 \subsection{Requirements}
-\subsubsection{Virtual Private Network (VPN)}
+\paragraph{Virtual Private Network (VPN)}
 Since APNA Management Service (Chapter \ref{apnams}) is a very crucial part of the infrastructure and every entity that wants to access its services should be able to reach it. In the usual SCIONLab AS scenario everything is behind a NAT which is problematic, thus requires setting up of VPN tunnel. 
 
-As a matter of fact APNA Management Service won't be the first one to use a VPN tunnel. Border Routers also face the same problem since the current overlay network in SCION is UDP/IPv4 and thus getting an IPv4 address for every interface of the border is not possbile. Thus everything has to be behind a NAT. Border router uses an OpenVPN to establish VPN tunnel. So in order to deploy APNA Management Service we also took help from VPN tunnels, but instead of using OpenVPN, we have used Wireguard which is way faster than OpenVPN and implemented inside Linux kernel itself.
+As a matter of fact APNA Management Service won't be the first one to use a VPN tunnel. Border Routers also face the same problem since the current overlay network in SCION is UDP/IPv4 and thus getting an IPv4 address for every interface of the border is not possible. Thus everything has to be behind a NAT. Border router uses an OpenVPN to establish VPN tunnel. So in order to deploy APNA Management Service we also took help from VPN tunnels, but instead of using OpenVPN, we have used Wireguard \cite{wireguard} which is way faster than OpenVPN and implemented inside Linux kernel itself.
 
 \subsection{Configuration}
 \begin{itemize}
@@ -29,31 +31,94 @@ As a matter of fact APNA Management Service won't be the first one to use a VPN 
     \item \textbf{AESKey}: denotes the key used by APNA Management Service to encrypt the host identifier. This key is 16 bytes long.
 \end{itemize}
 
-\subsubsection{Sample Configuration}
+\paragraph{Sample Configuration}
+\begin{code}
+\captionof{listing}{APNA Management Service Configuration}
 \inputminted[frame=lines, framesep=2mm, baselinestretch=1.2, fontsize=\footnotesize, breaklines]{json}{code_snippets/apnad.json}
+\end{code}
 
 In order to generate the above configuration \texttt{apnad\_config\_gen} which takes IP and Port number as an argument and output this configuration file.
 
 \subsection{Hardware Requirements}
 There is not a strict hardware requirement as its basically a simple Go UDP server. Anything with 1 GB RAM would work. I have tried deploying this application on a Raspberry-Pi 3B Model and it worked fine.
 
-\section{Deployment efforts needed for different approach}
+\section{Deployment efforts needed for different approach} \label{lab:all}
 
 \subsection{APNA over SCION}
 This approach is deploy-able on the current SCIONLab infrastructure as we discussed in Chapter \ref{apna_overlay} as it only requires source and destination border router capable of understanding APNA protocol which is easily possible by deploying two new AS on the current infrastructure. But there are some small challenges which are worth mentioning.
 
 \subsubsection{Border Router Configuration} \label{config:border_router}
 \begin{itemize}
-    \item \textbf{ApnaMSIP}: denotes an IPv4/IPv6 address at which APNA Management Service is listening
+    \item \textbf{ApnaMSIP}: denotes an IPv4/IPv6 address at which APNA Management Service is listening inside the VPN tunnel.
     \item \textbf{Port}: denotes a UDP port on which APNA Management Service is listening
     \item \textbf{HMACKey}: denotes the key which is used to generate 4-byte MAC for EphID authenticity. HMACKeys are usually 64 bytes long. HMAC internally uses \texttt{SHA256} to generate that MAC.
     \item \textbf{AESKey}: denotes the key used by APNA Management Service to encrypt the host identifier. This key is 16 bytes long.
     \item \textbf{AESBRMSKey}: denotes the symmetric key used by BR and APNA MS to encrypt the communication between them. This key is 16 bytes long.
 \end{itemize}
-\inputminted[frame=lines, framesep=2mm, baselinestretch=1.2, fontsize=\footnotesize, breaklines]{json}{code_snippets/border_router.json}
+
+\begin{code}
+\captionof{listing}{Border Router Configuration}
+\inputminted[frame=lines, framesep=2mm, baselinestretch=1.2, fontsize=\footnotesize, breaklines]{json}{code_snippets/border_router.json} \label{border_router_config}
+\end{code}
 
 \subsection{APNA Address Family}
-In order to deploy this approach all the Border Router needs to understand this new address family.
+In order to deploy this approach all the Border Router needs to understand this new address family. 
+
+\paragraph{Why it cannot be deployed on SCIONLab?}
+In order to understand why this approach is not deployable on SCIONLab we need to understand how does a border router process a SCION packet? In the SCION packet first part is the SCION Common Header which contains the address family that the packet contains and using that field it tries to find the length of the address in that address family to determine the size of L4 Header. It needs to obtain path information in order to forward the packet and path information is present after the L4 Header. Thus it needs parse the L4 header to forward the packet.
+
+Now because of new address family border router cannot find the right offset for the L4 header to find the path information. Thus the intermediate border router just drop these packets with new address family. Thus in order to deploy this approach all the border routers inside the SCIONLab needs to be modified.
+\newline \newline
+Nevertheless in order to deploy this approach border router needs to updated with new configuration file (Listing \ref{border_router_config}) as before. Even the dispatcher configuration need to be updated with \texttt{SipHashKey} and \texttt{AESKey}. Since currently dispatcher does not have any sort of json based configuration and adding one to the dispatcher is a lot of work since its written in C. So both the keys are present inside the main source file itself.
 
 \subsection{APNA Forwarding Service}
-This approach is deploy-able on the current SCIONLab infrastructure as a matter of fact it is currently deployed on five different AS in different ISDs.
+This approach is deploy-able on the current SCIONLab infrastructure as a matter of fact it is currently deployed on five different AS in different ISDs. This requires significant changes in the current infrastructure since there is a new service in the SCION infrastructure. Topology generator needs to be extended to create a new \texttt{supervisord} configuration for this service so that it gets started when the SCION starts.
+
+\paragraph{APNA Service Configuration}
+Listing \ref{apna_service_config} represents a sample configuration required by the APNA service. All the parameters which can be figured are mentioned below.
+\begin{code}
+\captionof{listing}{APNA Service Configuration}
+\inputminted[frame=lines, framesep=2mm, baselinestretch=1.2, fontsize=\footnotesize, breaklines]{json}{code_snippets/apna_srv_config.json} \label{apna_service_config}
+\end{code}
+
+\begin{itemize}
+    \item \textbf{ApnaMSIP}: denotes an IPv4/IPv6 address at which APNA Management Service is listening inside the VPN tunnel.
+    \item \textbf{Port}: denotes a UDP port on which APNA Management Service is listening
+    \item \textbf{HMACKey}: denotes the key which is used to generate 4-byte MAC for EphID authenticity. HMACKeys are usually 64 bytes long. HMAC internally uses \texttt{SHA256} to generate that MAC.
+    \item \textbf{AESKey}: denotes the key used by APNA Management Service to encrypt the host identifier. This key is 16 bytes long.
+    \item \textbf{SrvIP}: denotes an IPv4/IPv6 address at which APNA Service is listening inside the VPN tunnel.
+    \item \textbf{AESSRVMSKey}: denotes the symmetric key used by BR and APNA MS to encrypt the communication between them. This key is 16 bytes long.
+\end{itemize}
+
+\section{Configuration for APNA client and server}
+Listing \ref{client_config} refers to a sample configuration for APNA Client.
+\subsection{Client Configuration}
+\begin{code}
+\captionof{listing}{APNA Client Configuration}
+\inputminted[frame=lines, framesep=2mm, baselinestretch=1.2, fontsize=\footnotesize, breaklines]{json}{code_snippets/client.json} \label{client_config}
+\end{code}
+
+\begin{itemize}
+    \item \textbf{ApnaMSIP}: denotes an IPv4/IPv6 address at which APNA Management Service is listening inside the VPN tunnel.
+    \item \textbf{Port}: denotes a UDP port on which APNA Management Service is listening
+    \item \textbf{HMACKey}: denotes the key which is used to generate 4-byte MAC for EphID authenticity. HMACKeys are usually 64 bytes long. HMAC internally uses \texttt{SHA256} to generate that MAC.
+    \item \textbf{SymmetricKey}: denotes the symmetric key used by APNA Client and APNA MS to encrypt the communication between them. This key is 16 bytes long.
+    \item \textbf{ClientIP}: denotes an IPv4/IPv6 address used by APNA Client inside the VPN tunnel.
+    \item \textbf{ApnaMSPubKey}: denotes the public key used by APNA Mgmt service to sign the EphID certificate. This key is 32 bytes long.
+\end{itemize}
+
+\subsection{Server Configuration}
+Listing \ref{server_config} refers to a sample configuration for APNA Server.
+\begin{code}
+\captionof{listing}{APNA Server Configuration}
+\inputminted[frame=lines, framesep=2mm, baselinestretch=1.2, fontsize=\footnotesize, breaklines]{json}{code_snippets/server.json} \label{server_config}
+\end{code}
+
+\begin{itemize}
+    \item \textbf{ApnaMSIP}: denotes an IPv4/IPv6 address at which APNA Management Service is listening inside the VPN tunnel.
+    \item \textbf{Port}: denotes a UDP port on which APNA Management Service is listening
+    \item \textbf{HMACKey}: denotes the key which is used to generate 4-byte MAC for EphID authenticity. HMACKeys are usually 64 bytes long. HMAC internally uses \texttt{SHA256} to generate that MAC.
+    \item \textbf{SymmetricKey}: denotes the symmetric key used by APNA Server and APNA MS to encrypt the communication between them. This key is 16 bytes long.
+    \item \textbf{ServerIP}: denotes an IPv4/IPv6 address used by APNA Server inside the VPN tunnel.
+    \item \textbf{ApnaMSPubKey}: denotes the public key used by APNA Mgmt service to sign the EphID certificate. This key is 32 bytes long.
+\end{itemize}

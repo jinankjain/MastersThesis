@@ -6,11 +6,11 @@
 
 \section{Summary}
 
-This thesis explores design, various implementation approaches and deployment of Accountable and Private Network Architecture (APNA) on top of SCION that provides source accountability guarantees and is privacy-preserving.
+This thesis explores design, various implementation approaches and deployment of Accountable and Private Network Architecture (APNA) on top of SCION .
 
-Chapter \ref{overview} describes the base architecture of APNA including the two important design decisions which helps in achieving source accountability and preserves user privacy. First was to enlist ISPs are trusted third parties to provide a sweet spot for accountability and privacy. As an accountability agents ISPs establish a strong link between host identity and the sent packet on the network. As a privacy brokers ISPs issues privacy perserving addresses (i.e., EphIDs) that host can use as source address. Furthermore ISPs also provide a Public Key Infrastructure for certificates that binds EphIDs and the public keys associated with it. Using these public keys hosts can establish a shared symmetric secret key which could be used to encrypt communication which even ISPs cannot decrypt.
+Chapter \ref{overview} describes the base architecture of APNA including the two important design decisions which helps in achieving source accountability and preserves user privacy. First was to enlist ISPs are trusted third parties to provide a sweet spot for accountability and privacy. As an accountability agents ISPs establish a strong link between host identity and the sent packet on the network. As a privacy brokers ISPs issues privacy preserving addresses (i.e., EphIDs) that host can use as source address. Furthermore ISPs also provide a Public Key Infrastructure for certificates that binds EphIDs and the public keys associated with it. Using these public keys hosts can establish a shared symmetric secret key which could be used to encrypt communication which even ISPs cannot decrypt.
 
-Chapter \ref{apnams} describes the implementation details and various  functionalities realized by the APNA Management service. It discusses in great details about efficient way to generate EphID and provides byte level details about EphID and certificate associated with it. It also describes a new DNS system designed to distribute and register certificate of EphID. It explores design and implementation for Key Management Service which helps in Host Bootstrapping process and distributing host symmetric keys with other trusted components like border routers etc. Identity Management Service helps in establishing a link between HID and IP address of host and provides an efficient service to distribute that mapping to other trusted service like Border Routers, APNA service etc.
+Chapter \ref{apnams} describes the implementation details and various  functionalities realized by the APNA Management service. It discusses in great details about an efficient way to generate EphID and provides byte level details about EphID and certificate associated with it. It also describes a new DNS system designed to distribute and register certificate of EphID. It explores design and implementation for Key Management Service which helps in Host Bootstrapping process and distributing host symmetric keys with other trusted components like border routers etc. Identity Management Service helps in establishing a link between HID and IP address of host and provides an efficient service to distribute that mapping to other trusted service like Border Routers, APNA service etc.
 
 Chapter \ref{apna_overlay} describes the first approach to implement APNA on top of SCION. In this approach APNA is build on top existing UDP protocol present inside SCION. The approach is very similar to TLS over TCP or QUIC over UDP. The whole APNA header was placed inside payload of the SCION packet. There were few drawbacks of using this approach as lot of useful space was wasted and which was addressed in the next approach.
 
@@ -23,3 +23,21 @@ Chapter \ref{scionlab} mainly deals with operations cost related to deploying AP
 \section{Future Work}
 
 \subsection{Formal verification of APNA}
+APNA relies on various cryptographic primitives to provide source accountability guarantees and support privacy-preserving communication. To avoid having vulnerabilities inside cryptographic protocols we only use those which are vetted by standards and does not have any known possible attacks against those cryptographic primitive. Furthermore we try to quantify a good adversary model and logical reason about security guarantees against the adversary model. But the APNA handshake itself is quite an involved procedure and thus we still cannot conclusively say that there are no loopholes in the protocol described by us. Hence a formal verification would give us a more concrete evidence about the security guarantees provided by APNA protocol.
+
+\subsection{Designing higher level protocol against side channel attacks}
+In our work we did not look into side channel attacks like timing analysis, cache analysis etc which can violate the privacy guarantees provided by APNA protocol. We have not considered building defense against those attacks inside APNA since those defenses incur significant performance cost and not everyone would be interested in paying that cost. Thus we just wanted to provide a basic building block on top of which all these defense could be implemented.
+
+In future it would be interesting to design privacy preserving protocols that can combat against those side channels attacks. It would be interesting to look at the empirical results on performance penalty incurred by these protocols.
+
+\subsection{Integrating the current DNS system with RAINS}
+Rains, Another Internet Naming System (RAINS) is a clean-slate Internet naming service defined to meet a set of identified properties of an ideal Internet naming service. RAINS was defined in the context of the SCION architecture and it would be good idea to extend RAINS for APNA.
+
+\subsection{Improving the ergonomic of APNA APIs}
+Currently the APNA APIs provided by SNET are very basic and does not use path diversity provided by the SCION infrastructure. We believe that users would be interested in expressing their communication requirements like latency, bandwidth etc and incorporating those requirements into current APIs would be an interesting project. However a further study is needed to determine the criteria that users would use to describe their communication requirements. 
+
+\subsection{Designing more useful applications on top of APNA}
+Currently we have implemented only basic applications like client and server, bandwidth tester and a latency calculator. It would interested to design more applications using APNA which could really use the benefits provided by APNA.
+
+\subsection{Hybrid communication pattern using IP addresses and EphIDs}
+Currently in order to communicate using APNA both the hosts requires EphIDs but its possible to extend the current protocol such that one host can still use IP addresses and other can use EphIDs to hide their identity. However a further study is required to understand the implications on the security guarantees provided by APNA. One such repercussion would be on \textit{data-privacy} as the packet would not be encrypted.

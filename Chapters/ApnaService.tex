@@ -3,9 +3,10 @@
 \chapter{APNA as SCION Service} % Main chapter title
 
 \label{apna_service}
+In this chapter we will discuss the third approach to implement a new APNA as a SCION service. This chapter is structured as follows: \ref{ser:main_idea} covers the core idea behind this approach and describes the interaction with the APNA service, followed by Section \ref{srv:mod} which discusses the technical difficulties and the modifications required in the current infrastructure. Section \ref{srv:comm} presents an example in which two host communicate using the new address family. In the end we will discuss the drawback related to this approach \ref{srv:draw}. 
 
-\section{Main Idea}
-APNA Service (\texttt{AP\_SVC}) approach is radically different from the past two approaches described in previously i.e., APNA over SCION (Chapter \ref{apna_overlay}) and APNA address family (Chapter \ref{address_family}). The main idea behind this approach is to create a new SCION service (like Path Service, Certificate Service) which would be responsible for forwarding APNA packets. The main advantage of this approach instead of modifying the border router and dispatcher to handle APNA packets this new service will take care of APNA packets instead. That makes this approach easily deploy-able on the current SCIONLab infrastructure without a lot of changes in the existing deployment.
+\section{Main Idea} \label{ser:main_idea}
+APNA Service (\texttt{AP\_SVC}) approach is radically different from the past two approaches described in previously i.e., APNA over SCION (Chapter \ref{apna_overlay}) and APNA address family (Chapter \ref{address_family}). The main idea behind this approach is to create a new SCION service (such as Path Service, Certificate Service) which would be responsible for forwarding APNA packets. The main advantage of this approach instead of modifying the border router and dispatcher to handle APNA packets this new service will take care of APNA packets instead. That makes this approach easily deploy-able on the current SCIONLab infrastructure without a lot of changes in the existing deployment.
 
 APNA service is like a data plane service which is responsible for providing anonymous communication service for SCION. Any packet send to APNA service will get anonymously delivered to the destination. Source APNA service uses the anycast address to deliver the packet to destination APNA service which then forwards it to the appropriate host. Since we are using the anycast address for communication attacker cannot hamper the anonymity guarantees provided by APNA framework. APNA service consists of two different services inside it:
 \begin{itemize}
@@ -15,7 +16,7 @@ APNA service is like a data plane service which is responsible for providing ano
 We require two different services is because of the limitation of current SCION SNET API as it does not allow sending packets to service inside same \texttt{ISD-AS}.
 
 \subsection{APNA Service Architecture}
-\subsubsection{Design Goals for APNA service}
+\paragraph{Design Goals for APNA service}
 APNA Service needs to be highly reliable and efficient and in order to achieve this goal, its designed as a highly concurrent service using go-routines. Each functionality of APNA Service is distributed among different go-routines in order to avoid bottlenecks and use the power of multiprocessing to the full extend. There are multiple go-channels and each channel has a go-routine associated with it and whenever a packet arrives it gets processed by the appropriate go-routine and forwarded to the next channel for further processing.
 
 \subsection{Processing Outgoing Packet by APNA Service} \label{apna_service:out}
@@ -47,14 +48,14 @@ Figure \ref{fig:apna_svc_in} represents a scenario how does a APNA service proce
 \centering
 \includegraphics[scale=0.6]{Figures/apna_svc_request_pkt.pdf}
 \decoRule
-\caption[APNA Service Incoming Packet]{Incoming Packet Processing by APNA Service}
+\caption[APNA Service Incoming Packet]{APNA Service incoming packet}
 \label{fig:apna_svc_request_pkt}
 \end{figure}
 APNA service is a \texttt{UDP} based service and the host which want to use APNA service they need to send packets in the certain format so that APNA service can construct a SCION-APNA packet out of it and send it to the service on the destination side. This packet structure contains lots of information which will be present inside SCION header but since its a based service it does not have all that information. SCION packet will be constructed using this packet.
 
 This is can be simplified if SNET API allows host to send packet to service using its anycast service address. This issues has been reported to SCION team and they will take care of it in the near future. 
 
-\section{Modifications in the current infrastructure}
+\section{Modifications in the current infrastructure} \label{srv:mod}
 There are various reason which attribute for adjustment in the current SCION infrastructure to introduce a new service address for APNA service.
 
 \begin{itemize}
@@ -105,7 +106,7 @@ Figure \ref{fig:apna_svc_pkt} represents the packet structure used by APNA servi
 \end{figure}
 
 
-\section{Data Communication}
+\section{Data Communication} \label{srv:comm}
 \begin{figure}[th!!]
 \centering
 \hspace*{-1cm}\includegraphics[scale=0.35]{Figures/svc_arch.png}
@@ -130,5 +131,25 @@ At the last hop border router it will notice the anycast service address in the 
 \subsection{Part Fifth: APNA service delivering packet to destination host}
 In order to forward the packet to the destination host APNA service requires two think an IP address and a port number. Destination port number is already present inside the APNA service request packet. In order to obtain IP address from destination EphID APNA service can use the same algorithm previously used by destination border routers. The whole process how the APNA service process a outgoing packet is explained in the Section \ref{apna_service:in}.
 
-\section{Drawbacks}
-The main drawback behind this approach it increases the header size as EphID and Port number are pushed back into payload. 
+\section{Drawbacks} \label{srv:draw}
+The main drawback behind this approach it increases the header size as EphID and Port number are pushed back into payload. And it requires modification the whole build and deployment system to introduce a new service in the SCION infrastructure.
+
+\section{Comparison between all three approaches}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{center}
+\captionof{table}{Comparison between all three different approaches to implement APNA inside SCION} \label{tab:notation} 
+
+\begin{table}[th!!]
+\begin{tabular}{|c|c|c|c|}
+\hline
+                                                                           & \textbf{Approach 1}                                                                                          & \textbf{Approach 2}                                                                                       & \textbf{Approach 3}                                                                                                                   \\ \hline
+\textbf{\begin{tabular}[c]{@{}c@{}}SCIONLab \\ Deployability\end{tabular}} & Possible                                                                                                     & Not Possible                                                                                              & Possible                                                                                                                              \\ \hline
+\textbf{\begin{tabular}[c]{@{}c@{}}Implementation \\ Efforts\end{tabular}} & \begin{tabular}[c]{@{}c@{}}Major modifications \\ in source \\ and destination \\ border router\end{tabular} & \begin{tabular}[c]{@{}c@{}}Major modifications \\ in all the border \\ router and dispatcher\end{tabular} & \begin{tabular}[c]{@{}c@{}}New SCION service\\ implementation with minor \\ modifications in \\ border router and SCIOND\end{tabular} \\ \hline
+\textbf{MTU}                                                               & 1336                                                                                                         & 1378                                                                                                      & 1320                                                                                                                                  \\ \hline
+\end{tabular}
+\end{table}
+\end{center}
+\egroup
+
+In the end we finally deployed approach 3 on the SCIONLab infrastructure since it required minimum modifications in the existing SCION infrastructure. This approach even helps in the future when we want to make modifications inside the existing APNA protocol it would be much easier to do because of reducing coupling the SCION infrastructure. 

@@ -4,21 +4,20 @@
 
 \label{apnams} % For referencing the chapter elsewhere, use \ref{apnams}
 
-\section{What is APNA Management Service}
 APNA Management Service is a collection of four different types of services
 
 \begin{itemize}
-    \item Ephemeral ID Management Service
-    \item Domain Name Service (DNS)
-    \item Key Management Service (KMS)
-    \item Identity Management Service (IMS)
+    \item Ephemeral ID Management Service (Section \ref{sec:apna_ms})
+    \item Domain Name Service (DNS) (Section \ref{sec:apna_dns})
+    \item Key Management Service (KMS) (Section \ref{sec:kms})
+    \item Identity Management Service (IMS) (Section \ref{sec:ims})
 \end{itemize}
 
 \section{Ephemeral IDs Management} \label{sec:apna_ms}
 Ephemeral IDs (EphIDs) are very important component needed for establishing anonymous and accountable communication between host. Thus a major responsibility of the management service is to issue this EphID very efficiently as it would be required by every host trying to establish a new communication. This should also meet the security guarantees that is required from EphIDs. In order to efficiently compute EphID instead of keeping huge mapping inside the table symmetric cryptography is used to implement it in a stateless fashion.
 
 \subsection{Ephemeral ID (EphID) Structure}
-We engineered the length of EphID to optimize processing for the AES block cipher as its the only cipher with widespread hardware support, which enables high performance. In order to generate EphIDs we use a CCA-secure encryption scheme. To this end, we use a generic composition called Encrypt-then-MAC that combines a symmetric encryption with a message authentication code (MAC).
+We engineered the length of EphID to optimize processing for the AES block cipher \cite{rfc3602} as its the only cipher with widespread hardware support, which enables high performance. In order to generate EphIDs we use a CCA-secure encryption scheme. To this end, we use a generic composition called Encrypt-then-MAC that combines a symmetric encryption with a message authentication code (MAC).
 Ephemeral IDs are composed of three things:
 \begin{itemize}
     \item Initialization vector (IV)
@@ -26,7 +25,10 @@ Ephemeral IDs are composed of three things:
     \item Message Authentication Code (MAC)
 \end{itemize}
 
-\begin{figure}[th]
+\paragraph{Initialization Vector (IV)}
+Secure operations of this mode in AES requires a unique IV for every encryption operation (i.e. for every EphID).
+
+\begin{figure}[th!]
 \centering
 \includegraphics[scale=0.5]{Figures/ephid_construction.pdf}
 \decoRule
@@ -34,10 +36,7 @@ Ephemeral IDs are composed of three things:
 \label{fig:ephid_con}
 \end{figure}
 
-\subsubsection{Initialization Vector (IV)}
-Secure operations of this mode in AES requires a unique IV for every encryption operation (i.e. for every EphID)
-
-\subsubsection{Host Identifiers (HID)}
+\paragraph{Host Identifiers (HID)}
 \begin{center}
 \begin{tikzpicture}
     \draw (0,0) rectangle (2,1) node[pos=.5] {Type}; %node[anchor=north, pos=.5]{0};
@@ -55,7 +54,7 @@ Host Identifiers has three main components:
     \item \textbf{Expiration Time:} This represents the validity of an EphID which is expressed in Unix seconds. Control EphID usually have a longer expiration time than Session EphID. For example in our implementation Control EphID has an expiration time of 1hour and Session EphID has an expiration time of 5mins.
 \end{itemize}
 
-\subsubsection{Message Authentication Code (MAC)}
+\paragraph{Message Authentication Code (MAC)}
 IV and EHID are signed with the HMAC so that it could verify MAC before decryption of EphID to find HID to forward the packet.
 
 \subsection{EphID Issuance} \label{sec:why_encrypt}
@@ -79,17 +78,12 @@ If anyone of them fails client gets a reply back with specific \textit{ErrorCode
 \label{fig:ephid_gen}
 \end{figure}
 
-\begin{figure}
-    \centering
-        \begin{bytefield}{32}
-            \bitbox{32}{Ephemeral ID := $I_i$ (16 bytes)}\\
-            \wordbox{1}{Pubkey (32 bytes)}\\
-            \wordbox{1}{Expiration Time (4 bytes)}\\
-            \bitbox{32}{Signature (32 bytes)}
-        \end{bytefield}
-        \decoRule
-        \caption{Certificate byte level representation \tiny{\textsc{not to scale}}.}
-        \label{fig:ephid_cert}
+\begin{figure}[th!!]
+\centering
+\includegraphics[scale=0.6]{Figures/certificate.pdf}
+\decoRule
+\caption[EphID Certificate byte level information]{Certificate byte level information}
+\label{fig:ephid_cert}
 \end{figure}
 
 \subsection{Certificate Structure}
@@ -98,20 +92,13 @@ In order to get more exact details about internals of the certificate associated
 \section{Domain Name Service (DNS)} \label{sec:apna_dns}
 \subsection{Why can't we use current DNS system?}
 Since in APNA we have replaced IP addresses with Ephemeral Addresses which makes the current DNS system completely obsolete. Currently, DNS only understands how to resolve URL to IP addresses but in order to communicate with other APNA host we would need Ephemeral Address. In order to solve this problem current DNS could be modified be instead of returning A/AAAA records, it could return the certificate associated with the Ephemeral ID. This certificate contains all the details needed to establish the communication between communicating parties.
-
-\subsection{Problems with publishing EphID to DNS}
-Publishing EphIDs to the DNS raises a problem: a shutoff request against a published EphID would terminate any ongoing communication sessions that use this EphID. A naive solution is to update with a new EphID whenever published EphID becomes invalid. However an attacker can DDoS the DNS infrastructure by continuously sending shutoff request against a domain.
-
-Our solution is to use Control EphIDs that are only used for to receive packets and are never used as the source EphIDs. Since they are never used as the source identifier, they cannot become the target of shutoff requests. To avoid using receive-only EphIDs as the source identifier, the communication establishment to a server needs to be changed (i.e., server does not respond to the client using the receive-only EphID).
-
-\subsection{Details}
-It's a simple prototype implementation for DNS which works on basic register and request based protocol. For instance a server could register its certificate associated with receive only EphID with DNS when it starts. Whenever a client would need to fetch the server identity it could request from DNS Service. Internally its implemented using Golang map data structure whose complexity for insertion and lookup is $\mathcal{O}(1)$ which makes it a perfect candidate for the prototype. This makes DNS operation very fast and efficient.
+% Put DNS Operations first and then implementation and this problems inside
 
 \subsection{DNS Operations}
-\subsubsection{DNS Registration}
+\paragraph{DNS Registration}
 Figure \ref{fig:dns_register} represents a scenario in which a server registers \texttt{abc.com} receive only EphID's certificate ($C_{EphID}$) with the DNS service and if its successful it sends \texttt{ErrOk} back to the server.
 
-\subsubsection{DNS Resolution}
+\paragraph{DNS Resolution}
 Figure \ref{fig:dns_request} represents a scenario in which a client request for \texttt{abc.com} receive only EphID's certificate ($C_{EphID}$) with the DNS service and if the \texttt{abc.com} is registered with the DNS service it will reply with its $C_{EphID}$
 
 \begin{figure}[th!]
@@ -132,8 +119,23 @@ Figure \ref{fig:dns_request} represents a scenario in which a client request for
 \label{fig:dns}
 \end{figure}
 
-\section{Message Authentication Key Management} \label{sec:kms}
+\subsection{Details}
+It's a simple prototype implementation for DNS which works on basic register and request based protocol. For instance a server could register its certificate associated with receive only EphID with DNS when it starts. Whenever a client would need to fetch the server identity it could request from DNS Service. Internally its implemented using Golang map data structure whose complexity for insertion and lookup is $\mathcal{O}(1)$ which makes it a perfect candidate for the prototype. This makes DNS operation very fast and efficient.
+
+\subsection{Problems with publishing EphID to DNS}
+Publishing EphIDs to the DNS raises a problem: a shutoff request against a published EphID would terminate any ongoing communication sessions that use this EphID. A naive solution is to update with a new EphID whenever published EphID becomes invalid. However an attacker can DDoS the DNS infrastructure by continuously sending shutoff request against a domain.
+
+Our solution is to use Control EphIDs that are only used for to receive packets and are never used as the source EphIDs. Since they are never used as the source identifier, they cannot become the target of shutoff requests. To avoid using receive-only EphIDs as the source identifier, the communication establishment to a server needs to be changed (i.e., server does not respond to the client using the receive-only EphID).
+
+\section{Key Management Service} \label{sec:kms}
 In APNA every packet contains MAC signed by the symmetric key of the host which is sending the packet. The symmetric key which is used to sign the packet is registered with the Management Service. So the forwarding service could ask the management service for this key and verify the authenticity of the packet before forwarding the packet to the rest of network.
+
+\subsection{KMS Operations}
+\paragraph{Key Registration}
+This operation is usually performed by host at the bootstrapping where they sent their keys to the APNA management service which would later be used for signing the packets sent by it. For the registration phase host send its host identifier and the key encrypted with the symmetric key between host and APNA management service. KMS inserts that host identifier and symmetric inside the map. Flow diagram represented in \ref{fig:kms_register}
+
+\paragraph{Key Request}
+This operation is usually used the forwarding services such as border router or APNA service to obtain the symmetric key which was used to sign the packet to check for the authenticity of the packet before forwarding it on the network.  Flow diagram represented in \ref{fig:kms_request}
 
 \begin{figure}[th!]
 \centering
@@ -153,8 +155,14 @@ In APNA every packet contains MAC signed by the symmetric key of the host which 
 \label{fig:kms}
 \end{figure}
 
-\section{Mapping IPv4/IPv6 addresses to Host Identity} \label{sec:ims}
-Current internet only understands IPv4/IPv6 addresses to route any packet on the internet. In order to route APNA packets we need to build overlay network over the current internet. On other hand we also need 3 bytes unique representation for each host within the AS. So we have used Siphash [??] to create unique 3 bytes representation from IP address.
+\subsection{Implementation Details}
+It is implemented using a simple key-value based data structure in Golang (i.e., map). Keys are the host identifier and values are the symmetric keys between the host and the APNA management service. Under the hood Golang's map data structure is a hashmap whose complexity for insertion and lookup is $\mathcal{O}(1)$ which makes it a perfect candidate for the prototype. This makes KMS operation very fast and efficient.
+
+\section{Identity Management Service} \label{sec:ims}
+Current internet only understands IPv4/IPv6 addresses to route any packet on the internet. In order to route APNA packets we need to build overlay network over the current internet. On other hand we also need 3 bytes unique representation for each host within the AS. So we have used Siphash \cite{siphash} to create unique 3 bytes representation from IP address.
+
+\subsection{IMS operations}
+Figure \ref{fig:ims_request} represents the only operation performed by the IMS. This operation is mainly used by the forwarding service such as border router or APNA service. Using this operation forwarding services can obtain the IP address which can be used to forward the packet to the appropriate host.
 
 \begin{figure}[th!]
 \centering
@@ -164,5 +172,9 @@ Current internet only understands IPv4/IPv6 addresses to route any packet on the
 \label{fig:ims_request}
 \end{figure}
 
+\subsection{Implementation Details}
+Its implemented using a simple key-value store with keys as host identifier and value as the IP address. Under the hood Golang's map data structure is a hashmap whose complexity for insertion and lookup is $\mathcal{O}(1)$ which makes it a perfect candidate for the prototype. This makes IMS operation very fast and efficient.
+
+
 \section{Implementation}
-All the API access to APNA Management Service are modeled using Cap’n Proto specification.
+All the API access to APNA Management Service are modeled using Cap’n Proto specification. The main reason for using Cap’n Proto it helps in reducing all the pain behind serializing and deserializing byte streams. Secondly it was already by all other services inside so it was well integrated inside the build system of SCION.

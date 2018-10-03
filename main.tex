@@ -36,7 +36,7 @@ oneside,
 \usepackage{tikz}
 \usetikzlibrary{arrows, chains, fit, quotes}
 
-\usepackage[backend=bibtex,style=authoryear,natbib=true]{biblatex} % Use the bibtex backend with the authoryear citation style (which resembles APA)
+%\usepackage[backend=bibtex,style=authoryear,natbib=true]{biblatex} % Use the bibtex backend with the authoryear citation style (which resembles APA)
 
 \usepackage{graphicx}
 \usepackage{subcaption}
@@ -46,8 +46,9 @@ oneside,
 \usepackage[newfloat]{minted}
 \newenvironment{code}{\captionsetup{type=listing}}{}
 \SetupFloatingEnvironment{listing}{name=Listings}
-
-\addbibresource{example.bib} % The filename of the bibliography
+\usepackage[nottoc]{tocbibind}
+\usepackage[utf8]{inputenc}
+%\addbibresource{example.bib} % The filename of the bibliography
 
 \usepackage[autostyle=true]{csquotes} % Required to generate language-dependent quotes in the bibliography
 
@@ -168,11 +169,11 @@ oneside,
 %	QUOTATION PAGE
 %----------------------------------------------------------------------------------------
 
-\vspace*{0.2\textheight}
+%\vspace*{0.2\textheight}
 
-\noindent\enquote{\itshape template}\bigbreak
+%\noindent\enquote{\itshape template}\bigbreak
 
-\hfill Jinank Jain
+%\hfill Jinank Jain
 
 %----------------------------------------------------------------------------------------
 %	ABSTRACT PAGE
@@ -180,7 +181,11 @@ oneside,
 
 \begin{abstract}
 \addchaptertocentry{\abstractname} % Add the abstract to the table of contents
-In today's world most of us would agree that accountability and privacy are both valuable, but current Internet provides little support for either. Previous efforts have explored ways to offer stronger guarantees for one of the two, typically at the expense of the other; indeed, at first glance accountability and privacy appear mutually exclusive. [WIP]
+% Accountability and privacy are important for current internet. 
+% however supporting both at the same time is conflicting and why its challenging
+In today's world most of us would agree that accountability and privacy are both valuable, but current Internet provides little support for either. Packets on the current cannot be attributed to their source, and communication on the Internet cannot be kept private. Furthermore even if the current Internet could be modified to support those two properties providing both is difficult due to their conflict nature. Hence most Future Internet Architectures have focused on one at the expense of other.
+
+Accountable and Private Network Architecture (APNA) shows that it is possible to find the sweet spot between accountability and privacy using ISP as trusted third parties and using Ephemeral addresses instead of IP addresses for communication. Unfortunately, APNA does not provide a concrete implementation thus it lacks some details to realize it inside an Internet architecture. This works focus on extending the APNA protocol with all the missing information and implementing it inside a future internet architecture called Scalability, Control, and Isolation On Next-Generation Networks(SCION). It also explores different ways to integrate APNA with SCION and the associated trade-off with each approach. Finally this work deploys the implementation on SCIONLab, which is a testbed for SCION and evaluates the performance overhead of the APNA implementation against that of a vanilla SCION
 \end{abstract}
 
 %----------------------------------------------------------------------------------------
@@ -191,7 +196,14 @@ In today's world most of us would agree that accountability and privacy are both
 \addchaptertocentry{\acknowledgementname} % Add the acknowledgements to the table of contents
 This thesis was made possible by support from my advisor, colleagues, friends, and family who provided invaluable guidance, advice and encouragement.
 
-I would like to thank my advisor Prof. Adrian Perrig and Dr. Taeho Lee whose office was always open whenever I ran into a trouble spot or had a question about my research or writing. [WIP]
+I would like to thank my advisor Prof. Adrian Perrig and Dr. Taeho Lee whose office was always open whenever I ran into a trouble spot or had a question about my research or writing. Both of them provided me motivation to achieve more that helped in developing new research ideas during my thesis.
+
+I would also like to thank my colleagues from the ETH Z\"urich. I would like to thank Rayhaan Jaufeerally for all the fruitful design while working on my thesis. I would also like to thank my close friends Lisa Rebmann and Ayushi Bhayal who helped me get through the difficult periods during my masters journey. I would also like to thank the Anapaya Systems team: Stephen Shirley and Sam Hitz for helping me understand the SCION infrastructure details. Last but not he least, I would like to thanks SCIONLab team: Dr. Jonghoon Kwon and Juan A. Gracía Pardo who helped me a lot while I was deploying my solution on the SCIONLab.
+
+I would like to thank ETH for providing me the scholarship which made this masters program possible for me.
+
+Finally, I must express my very profound gratitude to my parents for providing me with unfailing support and continuous encouragement throughout my years of study and through the process of researching and writing this thesis. This accomplishment would not have been possible without them. Thank you.
+
 \end{acknowledgements}
 
 %----------------------------------------------------------------------------------------
@@ -217,7 +229,9 @@ I would like to thank my advisor Prof. Adrian Perrig and Dr. Taeho Lee whose off
 \textbf{BR} & \textbf{B}order \textbf{R}outer \\
 \textbf{ISD} & \textbf{IS}olation \textbf{D}omain \\
 \textbf{AS} & \textbf{A}utonomous \textbf{S}ystem \\
-
+\textbf{KMS} & \textbf{K}ey \textbf{M}anagement \textbf{S}ervice \\
+\textbf{IMS} & \textbf{I}dentity \textbf{M}anagement \textbf{S}ervice \\
+\textbf{VPN} & \textbf{V}irtual \textbf{P}rivate \textbf{N}etwork \\
 \end{abbreviations}
 
 %----------------------------------------------------------------------------------------
@@ -253,7 +267,7 @@ I would like to thank my advisor Prof. Adrian Perrig and Dr. Taeho Lee whose off
 %	DEDICATION
 %----------------------------------------------------------------------------------------
 
-\dedicatory{For/Dedicated to/To my\ldots} 
+\dedicatory{Dedicated to my family, friends, colleagues and ETH} 
 
 %----------------------------------------------------------------------------------------
 %	THESIS CONTENT - CHAPTERS
@@ -281,7 +295,7 @@ I would like to thank my advisor Prof. Adrian Perrig and Dr. Taeho Lee whose off
 %	THESIS CONTENT - APPENDICES
 %----------------------------------------------------------------------------------------
 
-\appendix % Cue to tell LaTeX that the following "chapters" are Appendices
+%\appendix % Cue to tell LaTeX that the following "chapters" are Appendices
 
 % Include the appendices of the thesis as separate files from the Appendices folder
 % Uncomment the lines as you write the Appendices
@@ -294,7 +308,8 @@ I would like to thank my advisor Prof. Adrian Perrig and Dr. Taeho Lee whose off
 %	BIBLIOGRAPHY
 %----------------------------------------------------------------------------------------
 
-\printbibliography[heading=bibintoc]
+\bibliographystyle{unsrt}
+\bibliography{example}
 
 %----------------------------------------------------------------------------------------
 
